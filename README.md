@@ -1,8 +1,8 @@
-# Claude Usage Widget - Fase 1 (solo UI)
+# Claude Usage Widget - Fase 2 (datos reales)
 
-Widget flotante para Windows que replica el mockup de dos barras. Esta fase no toca
-ninguna fuente real: corre contra un proveedor simulado para poder iterar el diseno
-sin depender de Claude Code ni de la app de escritorio.
+Widget flotante para Windows que muestra el consumo de tu suscripcion de Claude en dos
+barras: la ventana de 5 horas y la semanal. Lee los mismos datos que `/usage` dentro de
+Claude Code.
 
 ## Abrir
 
@@ -22,12 +22,20 @@ existe todavia. El error real esta en la ventana Lista de errores (Ctrl+\, E) o 
 Salida con el desplegable en "Compilar". Compila con Ctrl+Shift+B antes de F5 para
 verlo sin el dialogo de por medio.
 
-## Que vas a ver
+## De donde salen los datos
 
-El simulador arranca en los valores del mockup (38% y 82%), sube el consumo cada
-20 segundos y reinicia la ventana de 5 horas al llegar al tope. Sirve para revisar
-sin esperar: la animacion del relleno, el estado de alerta a partir del 90%, el
-prefijo `~` de un reinicio estimado y el texto `--` cuando no hay dato.
+Requiere Claude Code con la sesion iniciada con tu cuenta de Claude (`claude`, luego
+`/login`). El widget lee el token OAuth de `%USERPROFILE%\.claude\.credentials.json`
+(o de `CLAUDE_CONFIG_DIR` si lo tienes definido) y consulta
+`https://api.anthropic.com/api/oauth/usage` cada 2 minutos.
+
+- **Solo lectura.** El widget nunca renueva el token: hacerlo rotaria el refresh token
+  y cerraria la sesion de Claude Code. Si el token caduco porque no usas Claude Code desde
+  hace horas, el widget conserva el ultimo dato hasta que Claude Code lo renueve.
+- **Endpoint no documentado.** Es el que usa Claude Code internamente y puede cambiar.
+  Si cambia, el widget muestra `--` en lugar de inventar un numero.
+- **Diagnostico.** Si ves `--`, ejecuta con F5 y mira la ventana Salida (Depurar): cada
+  fallo deja una linea que empieza por `Claude usage:`.
 
 Arrastra con el boton izquierdo en cualquier punto. Clic derecho abre el menu con
 "Siempre visible" y "Cerrar". La posicion se guarda en
@@ -38,7 +46,7 @@ Arrastra con el boton izquierdo en cualquier punto. Clic derecho abre el menu co
     src/
       ClaudeUsageWidget.Domain           Reglas y tipos. Sin dependencias.
       ClaudeUsageWidget.Application      Puertos y formateadores de etiqueta.
-      ClaudeUsageWidget.Infrastructure   Reloj real y proveedor simulado.
+      ClaudeUsageWidget.Infrastructure   Reloj real, proveedor de Claude Code y simulador.
       ClaudeUsageWidget.Presentation.Wpf Ventana, control de barra, ViewModels.
 
 La direccion de dependencia apunta siempre hacia Domain. La UI habla con
@@ -52,7 +60,13 @@ La direccion de dependencia apunta siempre hacia Domain. La UI habla con
 | El umbral de alerta | `Domain/UsageAlertPolicy.cs` |
 | El formato `3:20h` | `Application/Formatting/CountdownResetLabelFormatter.cs` |
 | El formato `Sun 5:00 PM` | `Application/Formatting/WeekdayResetLabelFormatter.cs` |
-| La fuente de datos | `Presentation.Wpf/Composition/WidgetCompositionRoot.cs`, una linea |
+| La fuente de datos o la frecuencia de consulta | `Presentation.Wpf/Composition/WidgetCompositionRoot.cs` |
+| Lectura del token | `Infrastructure/ClaudeCode/ClaudeCodeCredentialsReader.cs` |
+| Llamada y traduccion de la respuesta | `Infrastructure/ClaudeCode/ClaudeOAuthUsageProvider.cs` |
+
+Para iterar el diseno sin datos reales, sustituye en `WidgetCompositionRoot` el
+proveedor por `new SimulatedUsageProvider(clock, new SimulatedUsageOptions())`: arranca
+en 38% y 82% y sube cada lectura para ver la animacion, la alerta y los reinicios.
 
 ## Nota sobre el nombre "Application"
 
@@ -60,9 +74,10 @@ La capa `ClaudeUsageWidget.Application` choca con `System.Windows.Application`: 
 de cualquier namespace que cuelgue de `ClaudeUsageWidget`, el identificador suelto
 `Application` resuelve al espacio de nombres y el compilador responde CS0118.
 
-El proyecto de presentacion lo resuelve con un alias global en `GlobalUsings.cs`.
-Si prefieres eliminar el choque de raiz en vez de aliasarlo, renombra la capa a
-`ClaudeUsageWidget.UseCases` o `ClaudeUsageWidget.Core` y borra ese archivo.
+Un `global using Application = ...` no lo arregla: los alias solo se consultan despues
+de los espacios de nombres que contienen el codigo. Por eso `App.xaml.cs` escribe
+`System.Windows.Application` completo. Si prefieres eliminar el choque de raiz, renombra
+la capa a `ClaudeUsageWidget.UseCases` o `ClaudeUsageWidget.Core`.
 
 ## Tipografia
 
@@ -71,8 +86,3 @@ Montserrat ExtraBold viene empotrada en `Assets/Fonts` bajo licencia SIL OFL 1.1
 "Montserrat ExtraBold" con subfamilia "Regular", por eso los `TextBlock` usan
 `FontWeight="Normal"`: poner `Bold` aplicaria un falso negrita sintetico encima de
 una fuente que ya es pesada, y se ve emborronado.
-
-## Siguiente fase
-
-Sustituir `SimulatedUsageProvider` por lectores reales. Nada fuera de
-`WidgetCompositionRoot` deberia cambiar.

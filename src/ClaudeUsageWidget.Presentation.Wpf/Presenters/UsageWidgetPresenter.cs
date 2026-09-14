@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows.Threading;
 using ClaudeUsageWidget.Application.Abstractions;
 using ClaudeUsageWidget.Presentation.Wpf.ViewModels;
@@ -78,10 +79,12 @@ public sealed class UsageWidgetPresenter : IDisposable
         {
             // Cierre de la aplicacion. No hay nada que reportar.
         }
-        catch (Exception)
+        catch (Exception exception)
         {
             // Una fuente caida no puede tumbar el widget: se conserva el ultimo dato
-            // y WidgetViewModel lo marcara como obsoleto por su edad.
+            // y WidgetViewModel lo marcara como obsoleto por su edad. El motivo queda
+            // en la ventana Salida de Visual Studio al depurar.
+            Debug.WriteLine($"Claude usage: fallo la lectura. {exception}");
         }
         finally
         {

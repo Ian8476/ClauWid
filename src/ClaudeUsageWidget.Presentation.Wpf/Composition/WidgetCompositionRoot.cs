@@ -3,7 +3,7 @@ using System.Windows.Threading;
 using ClaudeUsageWidget.Application.Abstractions;
 using ClaudeUsageWidget.Application.Formatting;
 using ClaudeUsageWidget.Domain;
-using ClaudeUsageWidget.Infrastructure.Fake;
+using ClaudeUsageWidget.Infrastructure.ClaudeCode;
 using ClaudeUsageWidget.Infrastructure.Time;
 using ClaudeUsageWidget.Presentation.Wpf.Persistence;
 using ClaudeUsageWidget.Presentation.Wpf.Presenters;
@@ -14,22 +14,26 @@ namespace ClaudeUsageWidget.Presentation.Wpf.Composition;
 
 /// <summary>
 /// Unico punto donde se decide que implementacion concreta usa cada puerto.
-/// Cambiar el simulador por una fuente real es cambiar una linea de este archivo.
+/// Volver al simulador (Infrastructure.Fake) para iterar la UI es cambiar la linea del proveedor.
 /// No hay contenedor de inyeccion porque a esta escala no aporta nada: todo lo demas
 /// ya recibe sus dependencias por constructor, asi que introducirlo despues es aditivo.
 /// </summary>
 public sealed class WidgetCompositionRoot : IDisposable
 {
-    private static readonly TimeSpan FetchInterval = TimeSpan.FromSeconds(20);
+    // Cada lectura es una llamada de red autenticada: consultar mas a menudo no aporta
+    // precision visible y arriesga respuestas 429.
+    private static readonly TimeSpan FetchInterval = TimeSpan.FromMinutes(2);
     private static readonly TimeSpan CountdownInterval = TimeSpan.FromSeconds(30);
 
+    private ClaudeOAuthUsageProvider? _provider;
     private UsageWidgetPresenter? _presenter;
 
     public MainWindow CreateMainWindow(Dispatcher dispatcher)
     {
         IClock clock = new SystemClock();
 
-        IUsageSnapshotProvider provider = new SimulatedUsageProvider(clock, new SimulatedUsageOptions());
+        _provider = new ClaudeOAuthUsageProvider(
+            new ClaudeCodeCredentialsReader(clock), clock, new ClaudeOAuthUsageOptions());
 
         var alertPolicy = new UsageAlertPolicy();
         var percentFormatter = new UsagePercentLabelFormatter();
@@ -47,12 +51,16 @@ public sealed class WidgetCompositionRoot : IDisposable
         var viewModel = new WidgetViewModel(fiveHour, sevenDay);
 
         _presenter = new UsageWidgetPresenter(
-            viewModel, provider, clock, FetchInterval, CountdownInterval, dispatcher);
+            viewModel, _provider, clock, FetchInterval, CountdownInterval, dispatcher);
 
         return new MainWindow(viewModel, new JsonWidgetPlacementStore());
     }
 
     public void StartRefreshing() => _presenter?.Start();
 
-    public void Dispose() => _presenter?.Dispose();
+    public void Dispose()
+    {
+        _presenter?.Dispose();
+        _provider?.Dispose();
+    }
 }
