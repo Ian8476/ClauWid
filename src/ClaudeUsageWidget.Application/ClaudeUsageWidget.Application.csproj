@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(WidgetTargetFramework)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ClaudeUsageWidget.Domain\ClaudeUsageWidget.Domain.csproj" />
+  </ItemGroup>
+</Project>

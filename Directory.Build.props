@@ -1,0 +1,18 @@
+<Project>
+  <!--
+    Un solo lugar para el target framework y las opciones de compilacion comunes.
+    Si tu Visual Studio no tiene el SDK de .NET 10, cambia estas dos lineas y ya:
+    net8.0 / net8.0-windows son LTS y vienen con cualquier VS 2022 actualizado.
+  -->
+  <PropertyGroup>
+    <WidgetTargetFramework>net8.0</WidgetTargetFramework>
+    <WidgetWindowsTargetFramework>net8.0-windows</WidgetWindowsTargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>

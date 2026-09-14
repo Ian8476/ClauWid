@@ -1,0 +1,40 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+    <!-- Colores muestreados pixel a pixel del mockup. No aproximar. -->
+    <Color x:Key="SurfaceColor">#FF241E1E</Color>
+    <Color x:Key="TrackColor">#FFFFFFFF</Color>
+    <Color x:Key="FiveHourAccentColor">#FF38B6FF</Color>
+    <Color x:Key="SevenDayAccentColor">#FFFFDE59</Color>
+    <Color x:Key="AlertAccentColor">#FFFF5F56</Color>
+    <Color x:Key="LabelColor">#FFFFFFFF</Color>
+
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
+    <SolidColorBrush x:Key="TrackBrush" Color="{StaticResource TrackColor}" />
+    <SolidColorBrush x:Key="FiveHourAccentBrush" Color="{StaticResource FiveHourAccentColor}" />
+    <SolidColorBrush x:Key="SevenDayAccentBrush" Color="{StaticResource SevenDayAccentColor}" />
+    <SolidColorBrush x:Key="AlertAccentBrush" Color="{StaticResource AlertAccentColor}" />
+    <SolidColorBrush x:Key="LabelBrush" Color="{StaticResource LabelColor}" />
+
+    <!--
+        Montserrat ExtraBold viene empotrada. El nombre de familia del archivo estatico
+        es "Montserrat ExtraBold" con subfamilia "Regular", asi que el peso se deja en
+        Normal: poner Bold aqui produciria un falso negrita sintetico sobre una fuente
+        que ya es pesada.
+    -->
+    <FontFamily x:Key="WidgetFontFamily">pack://application:,,,/Assets/Fonts/#Montserrat ExtraBold</FontFamily>
+    <sys:Double x:Key="LabelFontSize">18</sys:Double>
+
+    <!-- Escala derivada del mockup: alto de barra 68px sobre una tarjeta de 1479px. -->
+    <sys:Double x:Key="WidgetWidth">436</sys:Double>
+    <sys:Double x:Key="BarHeight">20</sys:Double>
+    <CornerRadius x:Key="BarCornerRadius">10</CornerRadius>
+    <CornerRadius x:Key="SurfaceCornerRadius">14</CornerRadius>
+    <Thickness x:Key="SurfacePadding">16</Thickness>
+    <Thickness x:Key="BarToLabelSpacing">0,5,0,0</Thickness>
+    <Thickness x:Key="BetweenRowsSpacing">0,14,0,0</Thickness>
+
+    <sys:Double x:Key="DimmedOpacity">0.35</sys:Double>
+
+</ResourceDictionary>

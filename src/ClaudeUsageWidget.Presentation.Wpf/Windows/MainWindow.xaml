@@ -1,0 +1,71 @@
+<Window x:Class="ClaudeUsageWidget.Presentation.Wpf.Windows.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:ClaudeUsageWidget.Presentation.Wpf.Controls"
+        Title="Claude usage"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        SizeToContent="Height"
+        Width="{StaticResource WidgetWidth}"
+        TextOptions.TextFormattingMode="Ideal"
+        TextOptions.TextRenderingMode="Grayscale"
+        UseLayoutRounding="True">
+
+    <Window.ContextMenu>
+        <ContextMenu>
+            <!--
+                Un ContextMenu no vive en el arbol visual de su ventana, asi que
+                RelativeSource AncestorType=Window no encuentra nada. El puente es
+                PlacementTarget, que si apunta al elemento que abrio el menu.
+            -->
+            <MenuItem Header="Siempre visible"
+                      IsCheckable="True"
+                      IsChecked="{Binding PlacementTarget.Topmost, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=TwoWay}" />
+            <Separator />
+            <MenuItem Header="Cerrar" Click="OnCloseRequested" />
+        </ContextMenu>
+    </Window.ContextMenu>
+
+    <Border Background="{StaticResource SurfaceBrush}"
+            CornerRadius="{StaticResource SurfaceCornerRadius}"
+            Padding="{StaticResource SurfacePadding}"
+            MouseLeftButtonDown="OnSurfaceDragStarted">
+
+        <StackPanel>
+
+            <controls:UsageBar Fraction="{Binding FiveHour.Fraction}"
+                               ResetLabel="{Binding FiveHour.ResetLabel}"
+                               PercentLabel="{Binding FiveHour.PercentLabel}"
+                               IsAlerting="{Binding FiveHour.IsAlerting}"
+                               AccentBrush="{StaticResource FiveHourAccentBrush}"
+                               AlertBrush="{StaticResource AlertAccentBrush}"
+                               TrackBrush="{StaticResource TrackBrush}"
+                               LabelBrush="{StaticResource LabelBrush}"
+                               LabelFontFamily="{StaticResource WidgetFontFamily}"
+                               LabelFontSize="{StaticResource LabelFontSize}"
+                               BarHeight="{StaticResource BarHeight}"
+                               BarCornerRadius="{StaticResource BarCornerRadius}"
+                               LabelSpacing="{StaticResource BarToLabelSpacing}" />
+
+            <controls:UsageBar Margin="{StaticResource BetweenRowsSpacing}"
+                               Fraction="{Binding SevenDay.Fraction}"
+                               ResetLabel="{Binding SevenDay.ResetLabel}"
+                               PercentLabel="{Binding SevenDay.PercentLabel}"
+                               IsAlerting="{Binding SevenDay.IsAlerting}"
+                               AccentBrush="{StaticResource SevenDayAccentBrush}"
+                               AlertBrush="{StaticResource AlertAccentBrush}"
+                               TrackBrush="{StaticResource TrackBrush}"
+                               LabelBrush="{StaticResource LabelBrush}"
+                               LabelFontFamily="{StaticResource WidgetFontFamily}"
+                               LabelFontSize="{StaticResource LabelFontSize}"
+                               BarHeight="{StaticResource BarHeight}"
+                               BarCornerRadius="{StaticResource BarCornerRadius}"
+                               LabelSpacing="{StaticResource BarToLabelSpacing}" />
+
+        </StackPanel>
+    </Border>
+</Window>

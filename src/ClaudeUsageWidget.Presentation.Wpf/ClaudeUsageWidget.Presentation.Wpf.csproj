@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>$(WidgetWindowsTargetFramework)</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>ClaudeUsageWidget</AssemblyName>
+    <RootNamespace>ClaudeUsageWidget.Presentation.Wpf</RootNamespace>
+    <!-- Apagado solo aqui: el codigo generado por XAML no esta bajo nuestro control. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\Fonts\Montserrat-ExtraBold.ttf" />
+    <None Include="Assets\Fonts\OFL.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ClaudeUsageWidget.Application\ClaudeUsageWidget.Application.csproj" />
+    <ProjectReference Include="..\ClaudeUsageWidget.Domain\ClaudeUsageWidget.Domain.csproj" />
+    <ProjectReference Include="..\ClaudeUsageWidget.Infrastructure\ClaudeUsageWidget.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>
