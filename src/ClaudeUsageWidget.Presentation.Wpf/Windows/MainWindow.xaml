@@ -6,7 +6,7 @@
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
-        ResizeMode="NoResize"
+        ResizeMode="CanResize"
         ShowInTaskbar="False"
         Topmost="True"
         SizeToContent="Height"
@@ -14,6 +14,19 @@
         TextOptions.TextFormattingMode="Ideal"
         TextOptions.TextRenderingMode="Grayscale"
         UseLayoutRounding="True">
+
+    <WindowChrome.WindowChrome>
+        <!--
+            Sin marco del sistema no hay bordes que agarrar. WindowChrome le devuelve a Windows
+            una franja invisible alrededor de la superficie para redimensionar desde cualquier
+            lado o esquina. CaptionHeight en 0: mover la ventana sigue siendo cosa de DragMove.
+        -->
+        <WindowChrome CaptionHeight="0"
+                      ResizeBorderThickness="{StaticResource ResizeBorderThickness}"
+                      GlassFrameThickness="0"
+                      CornerRadius="0"
+                      UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
 
     <Window.ContextMenu>
         <ContextMenu>
@@ -25,47 +38,68 @@
             <MenuItem Header="Siempre visible"
                       IsCheckable="True"
                       IsChecked="{Binding PlacementTarget.Topmost, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=TwoWay}" />
+            <MenuItem Header="Restablecer tamaño" Click="OnResetSizeRequested" />
             <Separator />
             <MenuItem Header="Cerrar" Click="OnCloseRequested" />
         </ContextMenu>
     </Window.ContextMenu>
 
-    <Border Background="{StaticResource SurfaceBrush}"
+    <Border x:Name="Surface"
+            Background="{StaticResource SurfaceBrush}"
             CornerRadius="{StaticResource SurfaceCornerRadius}"
             Padding="{StaticResource SurfacePadding}"
             MouseLeftButtonDown="OnSurfaceDragStarted">
 
-        <StackPanel>
+        <!-- La escala la fija el code-behind a partir del tamano de la ventana. -->
+        <Border.LayoutTransform>
+            <ScaleTransform x:Name="ContentScale" ScaleX="1" ScaleY="1" />
+        </Border.LayoutTransform>
 
-            <controls:UsageBar Fraction="{Binding FiveHour.Fraction}"
-                               ResetLabel="{Binding FiveHour.ResetLabel}"
-                               PercentLabel="{Binding FiveHour.PercentLabel}"
-                               IsAlerting="{Binding FiveHour.IsAlerting}"
-                               AccentBrush="{StaticResource FiveHourAccentBrush}"
-                               AlertBrush="{StaticResource AlertAccentBrush}"
-                               TrackBrush="{StaticResource TrackBrush}"
-                               LabelBrush="{StaticResource LabelBrush}"
-                               LabelFontFamily="{StaticResource WidgetFontFamily}"
-                               LabelFontSize="{StaticResource LabelFontSize}"
-                               BarHeight="{StaticResource BarHeight}"
-                               BarCornerRadius="{StaticResource BarCornerRadius}"
-                               LabelSpacing="{StaticResource BarToLabelSpacing}" />
+        <!--
+            Las filas van en una fila Auto porque el Grid la mide sin limite de alto: asi
+            Rows.DesiredSize es siempre el alto natural. Medidas directamente por el Border,
+            WPF recortaria ese valor al espacio disponible y el zoom se retroalimentaria,
+            encogiendo la ventana en cada cambio. Las filas * reparten el aire sobrante.
+        -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
 
-            <controls:UsageBar Margin="{StaticResource BetweenRowsSpacing}"
-                               Fraction="{Binding SevenDay.Fraction}"
-                               ResetLabel="{Binding SevenDay.ResetLabel}"
-                               PercentLabel="{Binding SevenDay.PercentLabel}"
-                               IsAlerting="{Binding SevenDay.IsAlerting}"
-                               AccentBrush="{StaticResource SevenDayAccentBrush}"
-                               AlertBrush="{StaticResource AlertAccentBrush}"
-                               TrackBrush="{StaticResource TrackBrush}"
-                               LabelBrush="{StaticResource LabelBrush}"
-                               LabelFontFamily="{StaticResource WidgetFontFamily}"
-                               LabelFontSize="{StaticResource LabelFontSize}"
-                               BarHeight="{StaticResource BarHeight}"
-                               BarCornerRadius="{StaticResource BarCornerRadius}"
-                               LabelSpacing="{StaticResource BarToLabelSpacing}" />
+            <StackPanel x:Name="Rows" Grid.Row="1">
 
-        </StackPanel>
+                <controls:UsageBar Fraction="{Binding FiveHour.Fraction}"
+                                   ResetLabel="{Binding FiveHour.ResetLabel}"
+                                   PercentLabel="{Binding FiveHour.PercentLabel}"
+                                   IsAlerting="{Binding FiveHour.IsAlerting}"
+                                   AccentBrush="{StaticResource FiveHourAccentBrush}"
+                                   AlertBrush="{StaticResource AlertAccentBrush}"
+                                   TrackBrush="{StaticResource TrackBrush}"
+                                   LabelBrush="{StaticResource LabelBrush}"
+                                   LabelFontFamily="{StaticResource WidgetFontFamily}"
+                                   LabelFontSize="{StaticResource LabelFontSize}"
+                                   BarHeight="{StaticResource BarHeight}"
+                                   BarCornerRadius="{StaticResource BarCornerRadius}"
+                                   LabelSpacing="{StaticResource BarToLabelSpacing}" />
+
+                <controls:UsageBar Margin="{StaticResource BetweenRowsSpacing}"
+                                   Fraction="{Binding SevenDay.Fraction}"
+                                   ResetLabel="{Binding SevenDay.ResetLabel}"
+                                   PercentLabel="{Binding SevenDay.PercentLabel}"
+                                   IsAlerting="{Binding SevenDay.IsAlerting}"
+                                   AccentBrush="{StaticResource SevenDayAccentBrush}"
+                                   AlertBrush="{StaticResource AlertAccentBrush}"
+                                   TrackBrush="{StaticResource TrackBrush}"
+                                   LabelBrush="{StaticResource LabelBrush}"
+                                   LabelFontFamily="{StaticResource WidgetFontFamily}"
+                                   LabelFontSize="{StaticResource LabelFontSize}"
+                                   BarHeight="{StaticResource BarHeight}"
+                                   BarCornerRadius="{StaticResource BarCornerRadius}"
+                                   LabelSpacing="{StaticResource BarToLabelSpacing}" />
+
+            </StackPanel>
+        </Grid>
     </Border>
 </Window>

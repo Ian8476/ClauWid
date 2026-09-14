@@ -37,8 +37,11 @@ Requiere Claude Code con la sesion iniciada con tu cuenta de Claude (`claude`, l
 - **Diagnostico.** Si ves `--`, ejecuta con F5 y mira la ventana Salida (Depurar): cada
   fallo deja una linea que empieza por `Claude usage:`.
 
-Arrastra con el boton izquierdo en cualquier punto. Clic derecho abre el menu con
-"Siempre visible" y "Cerrar". La posicion se guarda en
+Arrastra con el boton izquierdo en cualquier punto para moverlo, o desde cualquier borde
+o esquina para cambiar su tamano. El alto decide el zoom (texto, barras y margenes crecen
+juntos) y el ancho sobrante alarga las barras; si la ventana es demasiado estrecha para ese
+zoom, el contenido se queda centrado. Clic derecho abre el menu con
+"Siempre visible", "Restablecer tamaño" y "Cerrar". Posicion y tamano se guardan en
 `%LOCALAPPDATA%\ClaudeUsageWidget\placement.json`.
 
 ## Estructura
@@ -63,6 +66,8 @@ La direccion de dependencia apunta siempre hacia Domain. La UI habla con
 | La fuente de datos o la frecuencia de consulta | `Presentation.Wpf/Composition/WidgetCompositionRoot.cs` |
 | Lectura del token | `Infrastructure/ClaudeCode/ClaudeCodeCredentialsReader.cs` |
 | Llamada y traduccion de la respuesta | `Infrastructure/ClaudeCode/ClaudeOAuthUsageProvider.cs` |
+| Zoom minimo y maximo, ancho minimo al redimensionar | `Presentation.Wpf/Windows/MainWindow.xaml.cs` |
+| Grosor de la franja de redimensionado | `Presentation.Wpf/Theme/DesignTokens.xaml` |
 
 Para iterar el diseno sin datos reales, sustituye en `WidgetCompositionRoot` el
 proveedor por `new SimulatedUsageProvider(clock, new SimulatedUsageOptions())`: arranca

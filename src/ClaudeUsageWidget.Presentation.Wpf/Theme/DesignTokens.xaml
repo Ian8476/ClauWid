@@ -35,6 +35,9 @@
     <Thickness x:Key="BarToLabelSpacing">0,5,0,0</Thickness>
     <Thickness x:Key="BetweenRowsSpacing">0,14,0,0</Thickness>
 
+    <!-- Franja invisible junto al borde donde el cursor pasa a redimensionar en vez de mover. -->
+    <Thickness x:Key="ResizeBorderThickness">8</Thickness>
+
     <sys:Double x:Key="DimmedOpacity">0.35</sys:Double>
 
 </ResourceDictionary>
