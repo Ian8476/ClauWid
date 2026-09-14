@@ -1,0 +1,72 @@
+name: Release
+
+# Se dispara al empujar una etiqueta "vX.Y.Z" (p. ej. git tag v1.0.1 && git push origin v1.0.1).
+# workflow_dispatch permite lanzarlo a mano desde la pestaña Actions, con la misma etiqueta
+# como entrada, para reconstruir un release sin tener que borrar y volver a crear el tag.
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Etiqueta a publicar (ej. v1.0.1). Debe existir ya en el repositorio.'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    # WPF con net8.0-windows solo compila sobre Windows, no hay runner Linux que sirva aqui.
+    runs-on: windows-latest
+
+    steps:
+      - name: Descargar el codigo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Instalar el SDK de .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restaurar dependencias
+        run: dotnet restore ClaudeUsageWidget.sln
+
+      # --self-contained false: el runtime de .NET 8 Desktop queda como requisito del usuario,
+      # igual que en el release v1.0.0. Un solo .exe en vez de una carpeta llena de DLLs.
+      - name: Publicar en Release (win-x64, un solo archivo)
+        run: >
+          dotnet publish src/ClaudeUsageWidget.Presentation.Wpf
+          -c Release
+          -r win-x64
+          --self-contained false
+          -p:PublishSingleFile=true
+          -o publish
+
+      # Los .pdb son simbolos de depuracion: utiles en el equipo de build, inutiles (y pesados)
+      # en el zip que descarga el usuario final.
+      - name: Quitar simbolos de depuracion
+        run: Remove-Item publish\*.pdb -ErrorAction SilentlyContinue
+        shell: pwsh
+
+      - name: Empaquetar en zip
+        run: Compress-Archive -Path publish\* -DestinationPath ClaudeUsageWidget-win-x64.zip
+        shell: pwsh
+
+      - name: Publicar el release en GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          files: ClaudeUsageWidget-win-x64.zip
+          generate_release_notes: true
+          body: |
+            **Que incluye:** el .exe y la carpeta Assets (tipografia) empaquetados juntos en el zip.
+
+            **Requisitos:**
+            - Windows con el [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) instalado.
+            - Claude Code con sesion iniciada (`claude`, luego `/login`): el widget lee el token de ahi para consultar tu consumo real.
+
+            **Uso:** descomprime el zip en cualquier carpeta y ejecuta `ClaudeUsageWidget.exe`. Arrastra para mover, arrastra un borde para redimensionar, clic derecho para el menu.

@@ -2,3 +2,8 @@ bin/
 obj/
 .vs/
 *.user
+
+# Salida local de "dotnet publish". El workflow de release (.github/workflows/release.yml)
+# la genera el mismo en el runner; no tiene sentido versionarla.
+publish/
+*.zip
