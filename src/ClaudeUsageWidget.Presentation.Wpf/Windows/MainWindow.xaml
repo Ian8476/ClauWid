@@ -40,7 +40,9 @@
                       IsChecked="{Binding PlacementTarget.Topmost, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=TwoWay}" />
             <MenuItem Header="Restablecer tamaño" Click="OnResetSizeRequested" />
             <Separator />
-            <MenuItem Header="Cerrar" Click="OnCloseRequested" />
+            <!-- Oculta al area de notificacion; el icono de ahi la vuelve a mostrar. -->
+            <MenuItem Header="Ocultar" Click="OnHideRequested" />
+            <MenuItem Header="Salir" Click="OnCloseRequested" />
         </ContextMenu>
     </Window.ContextMenu>
 

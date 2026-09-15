@@ -70,6 +70,8 @@ public partial class MainWindow : Window
         DragMove();
     }
 
+    private void OnHideRequested(object sender, RoutedEventArgs args) => Hide();
+
     private void OnCloseRequested(object sender, RoutedEventArgs args) => Close();
 
     /// <summary>

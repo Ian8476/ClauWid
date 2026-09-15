@@ -7,6 +7,7 @@ using ClaudeUsageWidget.Infrastructure.ClaudeCode;
 using ClaudeUsageWidget.Infrastructure.Time;
 using ClaudeUsageWidget.Presentation.Wpf.Persistence;
 using ClaudeUsageWidget.Presentation.Wpf.Presenters;
+using ClaudeUsageWidget.Presentation.Wpf.Tray;
 using ClaudeUsageWidget.Presentation.Wpf.ViewModels;
 using ClaudeUsageWidget.Presentation.Wpf.Windows;
 
@@ -27,6 +28,7 @@ public sealed class WidgetCompositionRoot : IDisposable
 
     private ClaudeOAuthUsageProvider? _provider;
     private UsageWidgetPresenter? _presenter;
+    private WidgetTrayIcon? _trayIcon;
 
     public MainWindow CreateMainWindow(Dispatcher dispatcher)
     {
@@ -53,13 +55,17 @@ public sealed class WidgetCompositionRoot : IDisposable
         _presenter = new UsageWidgetPresenter(
             viewModel, _provider, clock, FetchInterval, CountdownInterval, dispatcher);
 
-        return new MainWindow(viewModel, new JsonWidgetPlacementStore());
+        var window = new MainWindow(viewModel, new JsonWidgetPlacementStore());
+        _trayIcon = new WidgetTrayIcon(window, viewModel);
+
+        return window;
     }
 
     public void StartRefreshing() => _presenter?.Start();
 
     public void Dispose()
     {
+        _trayIcon?.Dispose();
         _presenter?.Dispose();
         _provider?.Dispose();
     }
