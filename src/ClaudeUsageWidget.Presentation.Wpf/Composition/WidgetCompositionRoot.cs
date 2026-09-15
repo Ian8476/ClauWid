@@ -5,6 +5,7 @@ using ClaudeUsageWidget.Application.Formatting;
 using ClaudeUsageWidget.Domain;
 using ClaudeUsageWidget.Infrastructure.ClaudeCode;
 using ClaudeUsageWidget.Infrastructure.Time;
+using ClaudeUsageWidget.Presentation.Wpf.Displays;
 using ClaudeUsageWidget.Presentation.Wpf.Persistence;
 using ClaudeUsageWidget.Presentation.Wpf.Presenters;
 using ClaudeUsageWidget.Presentation.Wpf.Tray;
@@ -55,7 +56,8 @@ public sealed class WidgetCompositionRoot : IDisposable
         _presenter = new UsageWidgetPresenter(
             viewModel, _provider, clock, FetchInterval, CountdownInterval, dispatcher);
 
-        var window = new MainWindow(viewModel, new JsonWidgetPlacementStore());
+        var window = new MainWindow(
+            viewModel, new JsonWidgetPlacementStore(), new Win32DisplayLayoutProvider());
         _trayIcon = new WidgetTrayIcon(window, viewModel);
 
         return window;
