@@ -18,8 +18,6 @@ Sin pestañas que abrir ni comandos que recordar — el número que importa, sie
 - **Siempre visible** opcional, y recuerda su posición y tamaño entre sesiones.
 - Sin marco, sin barra de título, sin icono en la barra de tareas: es un widget, no una
   ventana más.
-- **Icono en el área de notificación** (iconos ocultos, `^` junto al reloj): muestra el
-  consumo al pasar el ratón y permite ocultar o volver a mostrar el widget.
 
 ## Descargar y ejecutar
 
@@ -45,10 +43,7 @@ Sin pestañas que abrir ni comandos que recordar — el número que importa, sie
 | Cambiar el tamaño | Arrastrar desde cualquier borde o esquina |
 | Restablecer el tamaño | Clic derecho → "Restablecer tamaño" |
 | Mantenerla siempre visible | Clic derecho → "Siempre visible" |
-| Ocultarla | Clic derecho → "Ocultar", o clic en el icono del área de notificación |
-| Volver a mostrarla | Clic en el icono del área de notificación |
-| Ver el consumo sin abrirla | Pasar el ratón por el icono del área de notificación |
-| Salir | Clic derecho en el widget o en el icono → "Salir" |
+| Cerrarla | Clic derecho → "Cerrar" |
 
 Posición y tamaño se guardan en `%LOCALAPPDATA%\ClaudeUsageWidget\placement.json` y se
 restauran la próxima vez que la abras.
