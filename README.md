@@ -45,8 +45,11 @@ Sin pestañas que abrir ni comandos que recordar — el número que importa, sie
 | Mantenerla siempre visible | Clic derecho → "Siempre visible" |
 | Cerrarla | Clic derecho → "Cerrar" |
 
-Posición y tamaño se guardan en `%LOCALAPPDATA%\ClaudeUsageWidget\placement.json` y se
-restauran la próxima vez que la abras.
+Posición y tamaño se guardan en `%LOCALAPPDATA%\ClaudeUsageWidget\placement.json`, uno
+por cada combinación de monitores: si a veces usas un solo monitor de 1920x1080 y otras
+un 2K junto a ese mismo 1920x1080, el widget recuerda dónde lo dejaste en cada caso y
+vuelve ahí al abrirlo o al conectar y desconectar pantallas. Si la posición recordada
+quedara fuera de la vista, se centra en el monitor principal.
 
 Si ves `--` en vez de un porcentaje, es que el widget no pudo leer tu consumo: revisa que
 Claude Code tenga una sesión activa (`claude` en una terminal). El dato no desaparece de
