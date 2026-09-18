@@ -23,7 +23,7 @@
 
   <ItemGroup>
     <Resource Include="Assets\Icons\ClaudeUsageWidget.ico" />
-    <Resource Include="Assets\Fonts\Montserrat-ExtraBold.ttf" />
+    <Resource Include="Assets\Fonts\Montserrat-Medium.ttf" />
     <None Include="Assets\Fonts\OFL.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

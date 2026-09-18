@@ -14,9 +14,13 @@ public partial class UsageBar : UserControl
 {
     private static readonly Duration FillDuration = new(TimeSpan.FromMilliseconds(420));
 
+    // Owned by the control, never frozen, so its color can be animated between bands.
+    private readonly SolidColorBrush _fillPaint = new(Colors.Transparent);
+
     public UsageBar()
     {
         InitializeComponent();
+        Fill.Background = _fillPaint;
         Track.SizeChanged += (_, _) => ApplyFill(animate: false);
     }
 
@@ -30,17 +34,9 @@ public partial class UsageBar : UserControl
     public static readonly DependencyProperty PercentLabelProperty = DependencyProperty.Register(
         nameof(PercentLabel), typeof(string), typeof(UsageBar), new PropertyMetadata(string.Empty));
 
-    public static readonly DependencyProperty AccentBrushProperty = DependencyProperty.Register(
-        nameof(AccentBrush), typeof(Brush), typeof(UsageBar),
-        new PropertyMetadata(Brushes.Transparent, OnAccentChanged));
-
-    public static readonly DependencyProperty AlertBrushProperty = DependencyProperty.Register(
-        nameof(AlertBrush), typeof(Brush), typeof(UsageBar),
-        new PropertyMetadata(Brushes.Transparent, OnAccentChanged));
-
-    public static readonly DependencyProperty IsAlertingProperty = DependencyProperty.Register(
-        nameof(IsAlerting), typeof(bool), typeof(UsageBar),
-        new PropertyMetadata(false, OnAccentChanged));
+    public static readonly DependencyProperty FillBrushProperty = DependencyProperty.Register(
+        nameof(FillBrush), typeof(Brush), typeof(UsageBar),
+        new PropertyMetadata(Brushes.Transparent, OnFillBrushChanged));
 
     public static readonly DependencyProperty TrackBrushProperty = DependencyProperty.Register(
         nameof(TrackBrush), typeof(Brush), typeof(UsageBar), new PropertyMetadata(Brushes.White));
@@ -48,22 +44,28 @@ public partial class UsageBar : UserControl
     public static readonly DependencyProperty LabelBrushProperty = DependencyProperty.Register(
         nameof(LabelBrush), typeof(Brush), typeof(UsageBar), new PropertyMetadata(Brushes.White));
 
+    public static readonly DependencyProperty PercentLabelBrushProperty = DependencyProperty.Register(
+        nameof(PercentLabelBrush), typeof(Brush), typeof(UsageBar), new PropertyMetadata(Brushes.White));
+
     public static readonly DependencyProperty LabelFontFamilyProperty = DependencyProperty.Register(
         nameof(LabelFontFamily), typeof(FontFamily), typeof(UsageBar), new PropertyMetadata(default(FontFamily)));
 
     public static readonly DependencyProperty LabelFontSizeProperty = DependencyProperty.Register(
-        nameof(LabelFontSize), typeof(double), typeof(UsageBar), new PropertyMetadata(18d));
+        nameof(LabelFontSize), typeof(double), typeof(UsageBar), new PropertyMetadata(13d));
+
+    public static readonly DependencyProperty LabelFontWeightProperty = DependencyProperty.Register(
+        nameof(LabelFontWeight), typeof(FontWeight), typeof(UsageBar), new PropertyMetadata(FontWeights.Normal));
 
     public static readonly DependencyProperty BarHeightProperty = DependencyProperty.Register(
-        nameof(BarHeight), typeof(double), typeof(UsageBar), new PropertyMetadata(20d));
+        nameof(BarHeight), typeof(double), typeof(UsageBar), new PropertyMetadata(6d));
 
     public static readonly DependencyProperty BarCornerRadiusProperty = DependencyProperty.Register(
         nameof(BarCornerRadius), typeof(CornerRadius), typeof(UsageBar),
-        new PropertyMetadata(new CornerRadius(10)));
+        new PropertyMetadata(new CornerRadius(3)));
 
     public static readonly DependencyProperty LabelSpacingProperty = DependencyProperty.Register(
         nameof(LabelSpacing), typeof(Thickness), typeof(UsageBar),
-        new PropertyMetadata(new Thickness(0, 5, 0, 0)));
+        new PropertyMetadata(new Thickness(0, 0, 0, 6)));
 
     public double Fraction
     {
@@ -83,22 +85,10 @@ public partial class UsageBar : UserControl
         set => SetValue(PercentLabelProperty, value);
     }
 
-    public Brush AccentBrush
+    public Brush FillBrush
     {
-        get => (Brush)GetValue(AccentBrushProperty);
-        set => SetValue(AccentBrushProperty, value);
-    }
-
-    public Brush AlertBrush
-    {
-        get => (Brush)GetValue(AlertBrushProperty);
-        set => SetValue(AlertBrushProperty, value);
-    }
-
-    public bool IsAlerting
-    {
-        get => (bool)GetValue(IsAlertingProperty);
-        set => SetValue(IsAlertingProperty, value);
+        get => (Brush)GetValue(FillBrushProperty);
+        set => SetValue(FillBrushProperty, value);
     }
 
     public Brush TrackBrush
@@ -113,6 +103,12 @@ public partial class UsageBar : UserControl
         set => SetValue(LabelBrushProperty, value);
     }
 
+    public Brush PercentLabelBrush
+    {
+        get => (Brush)GetValue(PercentLabelBrushProperty);
+        set => SetValue(PercentLabelBrushProperty, value);
+    }
+
     public FontFamily LabelFontFamily
     {
         get => (FontFamily)GetValue(LabelFontFamilyProperty);
@@ -123,6 +119,12 @@ public partial class UsageBar : UserControl
     {
         get => (double)GetValue(LabelFontSizeProperty);
         set => SetValue(LabelFontSizeProperty, value);
+    }
+
+    public FontWeight LabelFontWeight
+    {
+        get => (FontWeight)GetValue(LabelFontWeightProperty);
+        set => SetValue(LabelFontWeightProperty, value);
     }
 
     public double BarHeight
@@ -143,28 +145,29 @@ public partial class UsageBar : UserControl
         set => SetValue(LabelSpacingProperty, value);
     }
 
-    private static readonly DependencyPropertyKey EffectiveAccentBrushPropertyKey =
-        DependencyProperty.RegisterReadOnly(
-            nameof(EffectiveAccentBrush), typeof(Brush), typeof(UsageBar),
-            new PropertyMetadata(Brushes.Transparent));
-
-    public static readonly DependencyProperty EffectiveAccentBrushProperty =
-        EffectiveAccentBrushPropertyKey.DependencyProperty;
-
-    /// <summary>
-    /// Pincel efectivo del relleno: el acento normal, o el de alerta si se cruzo el umbral.
-    /// Es una propiedad de dependencia de solo lectura para que el binding del XAML
-    /// se entere del cambio sin implementar INotifyPropertyChanged en un control.
-    /// </summary>
-    public Brush EffectiveAccentBrush => (Brush)GetValue(EffectiveAccentBrushProperty);
-
     private static void OnFractionChanged(DependencyObject source, DependencyPropertyChangedEventArgs args) =>
         ((UsageBar)source).ApplyFill(animate: true);
 
-    private static void OnAccentChanged(DependencyObject source, DependencyPropertyChangedEventArgs args)
+    private static void OnFillBrushChanged(DependencyObject source, DependencyPropertyChangedEventArgs args) =>
+        ((UsageBar)source).ApplyFillBrush();
+
+    /// <summary>
+    /// A solid brush fades into place alongside the width animation, so crossing into
+    /// another band reads as one motion instead of a flash. Anything else is shown as is.
+    /// </summary>
+    private void ApplyFillBrush()
     {
-        var bar = (UsageBar)source;
-        bar.SetValue(EffectiveAccentBrushPropertyKey, bar.IsAlerting ? bar.AlertBrush : bar.AccentBrush);
+        if (FillBrush is not SolidColorBrush { Color: var color })
+        {
+            Fill.Background = FillBrush;
+            return;
+        }
+
+        Fill.Background = _fillPaint;
+        _fillPaint.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation(color, FillDuration)
+        {
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+        });
     }
 
     /// <summary>

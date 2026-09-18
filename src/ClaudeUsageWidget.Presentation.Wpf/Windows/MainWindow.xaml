@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:ClaudeUsageWidget.Presentation.Wpf.Controls"
+        xmlns:converters="clr-namespace:ClaudeUsageWidget.Presentation.Wpf.Converters"
         Title="Claude usage"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -27,6 +28,14 @@
                       CornerRadius="0"
                       UseAeroCaptionButtons="False" />
     </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <converters:UsageSeverityBrushConverter x:Key="SeverityBrushConverter"
+                                                LowBrush="{StaticResource LowUsageBrush}"
+                                                ModerateBrush="{StaticResource ModerateUsageBrush}"
+                                                HighBrush="{StaticResource HighUsageBrush}"
+                                                CriticalBrush="{StaticResource CriticalUsageBrush}" />
+    </Window.Resources>
 
     <Window.ContextMenu>
         <ContextMenu>
@@ -75,31 +84,31 @@
                 <controls:UsageBar Fraction="{Binding FiveHour.Fraction}"
                                    ResetLabel="{Binding FiveHour.ResetLabel}"
                                    PercentLabel="{Binding FiveHour.PercentLabel}"
-                                   IsAlerting="{Binding FiveHour.IsAlerting}"
-                                   AccentBrush="{StaticResource FiveHourAccentBrush}"
-                                   AlertBrush="{StaticResource AlertAccentBrush}"
+                                   FillBrush="{Binding FiveHour.Severity, Converter={StaticResource SeverityBrushConverter}}"
                                    TrackBrush="{StaticResource TrackBrush}"
                                    LabelBrush="{StaticResource LabelBrush}"
+                                   PercentLabelBrush="{StaticResource PercentLabelBrush}"
                                    LabelFontFamily="{StaticResource WidgetFontFamily}"
                                    LabelFontSize="{StaticResource LabelFontSize}"
+                                   LabelFontWeight="{StaticResource LabelFontWeight}"
                                    BarHeight="{StaticResource BarHeight}"
                                    BarCornerRadius="{StaticResource BarCornerRadius}"
-                                   LabelSpacing="{StaticResource BarToLabelSpacing}" />
+                                   LabelSpacing="{StaticResource LabelToBarSpacing}" />
 
                 <controls:UsageBar Margin="{StaticResource BetweenRowsSpacing}"
                                    Fraction="{Binding SevenDay.Fraction}"
                                    ResetLabel="{Binding SevenDay.ResetLabel}"
                                    PercentLabel="{Binding SevenDay.PercentLabel}"
-                                   IsAlerting="{Binding SevenDay.IsAlerting}"
-                                   AccentBrush="{StaticResource SevenDayAccentBrush}"
-                                   AlertBrush="{StaticResource AlertAccentBrush}"
+                                   FillBrush="{Binding SevenDay.Severity, Converter={StaticResource SeverityBrushConverter}}"
                                    TrackBrush="{StaticResource TrackBrush}"
                                    LabelBrush="{StaticResource LabelBrush}"
+                                   PercentLabelBrush="{StaticResource PercentLabelBrush}"
                                    LabelFontFamily="{StaticResource WidgetFontFamily}"
                                    LabelFontSize="{StaticResource LabelFontSize}"
+                                   LabelFontWeight="{StaticResource LabelFontWeight}"
                                    BarHeight="{StaticResource BarHeight}"
                                    BarCornerRadius="{StaticResource BarCornerRadius}"
-                                   LabelSpacing="{StaticResource BarToLabelSpacing}" />
+                                   LabelSpacing="{StaticResource LabelToBarSpacing}" />
 
             </StackPanel>
         </Grid>

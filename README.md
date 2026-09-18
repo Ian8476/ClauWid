@@ -12,7 +12,8 @@ Sin pestañas que abrir ni comandos que recordar — el número que importa, sie
   autenticado con tu sesión ya iniciada.
 - **Dos barras**, consumo de 5 horas y consumo semanal, cada una con su porcentaje y su
   hora de reinicio.
-- **Alerta visual** cuando una ventana pasa del 90% de uso.
+- **Color by usage**, the same on both bars: blue below 50%, yellow below 70%, orange
+  below 85% and red from there on.
 - **Ventana redimensionable**: arrastra un borde o una esquina y el texto, las barras y
   los márgenes escalan juntos. Arrastra desde el centro para moverla.
 - **Siempre visible** opcional, y recuerda su posición y tamaño entre sesiones.
@@ -74,7 +75,7 @@ definido) y consulta `https://api.anthropic.com/api/oauth/usage` cada 2 minutos.
 
 ## Créditos
 
-Montserrat ExtraBold viene empotrada en `src/ClaudeUsageWidget.Presentation.Wpf/Assets/Fonts`
+Montserrat Medium viene empotrada en `src/ClaudeUsageWidget.Presentation.Wpf/Assets/Fonts`
 bajo licencia [SIL Open Font License 1.1](src/ClaudeUsageWidget.Presentation.Wpf/Assets/Fonts/OFL.txt).
 
 Este proyecto no está afiliado a Anthropic. "Claude" es una marca de Anthropic PBC.

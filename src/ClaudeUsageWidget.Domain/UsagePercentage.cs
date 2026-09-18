@@ -26,8 +26,14 @@ public readonly record struct UsagePercentage
 
     public double AsFraction => Value / Maximum;
 
-    public bool IsAtLeast(double threshold) => Value >= threshold;
+    /// <summary>The whole percent shown to the user.</summary>
+    public double Rounded => Math.Round(Value, MidpointRounding.AwayFromZero);
 
-    public override string ToString() =>
-        Math.Round(Value, MidpointRounding.AwayFromZero).ToString("0") + "%";
+    /// <summary>
+    /// Compares the rounded value, not the raw one: 49.6 reads as "50%", so it has to
+    /// count as 50 too, or the label and the band it falls into would disagree.
+    /// </summary>
+    public bool IsAtLeast(double threshold) => Rounded >= threshold;
+
+    public override string ToString() => Rounded.ToString("0") + "%";
 }

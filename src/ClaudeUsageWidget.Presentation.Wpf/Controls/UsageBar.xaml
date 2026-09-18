@@ -5,34 +5,34 @@
 
     <StackPanel>
 
-        <Border x:Name="Track"
-                Height="{Binding BarHeight, ElementName=Root}"
-                CornerRadius="{Binding BarCornerRadius, ElementName=Root}"
-                Background="{Binding TrackBrush, ElementName=Root}"
-                SnapsToDevicePixels="True">
-
-            <Border x:Name="Fill"
-                    HorizontalAlignment="Left"
-                    Width="0"
-                    CornerRadius="{Binding BarCornerRadius, ElementName=Root}"
-                    Background="{Binding EffectiveAccentBrush, ElementName=Root}" />
-        </Border>
-
         <Grid Margin="{Binding LabelSpacing, ElementName=Root}">
             <TextBlock Text="{Binding ResetLabel, ElementName=Root}"
                        HorizontalAlignment="Left"
                        FontFamily="{Binding LabelFontFamily, ElementName=Root}"
                        FontSize="{Binding LabelFontSize, ElementName=Root}"
-                       FontWeight="Normal"
+                       FontWeight="{Binding LabelFontWeight, ElementName=Root}"
                        Foreground="{Binding LabelBrush, ElementName=Root}" />
 
             <TextBlock Text="{Binding PercentLabel, ElementName=Root}"
                        HorizontalAlignment="Right"
                        FontFamily="{Binding LabelFontFamily, ElementName=Root}"
                        FontSize="{Binding LabelFontSize, ElementName=Root}"
-                       FontWeight="Normal"
-                       Foreground="{Binding LabelBrush, ElementName=Root}" />
+                       FontWeight="{Binding LabelFontWeight, ElementName=Root}"
+                       Foreground="{Binding PercentLabelBrush, ElementName=Root}" />
         </Grid>
+
+        <Border x:Name="Track"
+                Height="{Binding BarHeight, ElementName=Root}"
+                CornerRadius="{Binding BarCornerRadius, ElementName=Root}"
+                Background="{Binding TrackBrush, ElementName=Root}"
+                SnapsToDevicePixels="True">
+
+            <!-- The code-behind owns the background so it can fade between band colors. -->
+            <Border x:Name="Fill"
+                    HorizontalAlignment="Left"
+                    Width="0"
+                    CornerRadius="{Binding BarCornerRadius, ElementName=Root}" />
+        </Border>
 
     </StackPanel>
 </UserControl>

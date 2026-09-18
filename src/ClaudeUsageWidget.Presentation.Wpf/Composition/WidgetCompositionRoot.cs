@@ -41,18 +41,18 @@ public sealed class WidgetCompositionRoot : IDisposable
             clock,
             new ClaudeOAuthUsageOptions());
 
-        var alertPolicy = new UsageAlertPolicy();
+        var severityPolicy = new UsageSeverityPolicy();
         var percentFormatter = new UsagePercentLabelFormatter();
 
         var fiveHour = new UsageBarViewModel(
             new CountdownResetLabelFormatter(),
             percentFormatter,
-            alertPolicy);
+            severityPolicy);
 
         var sevenDay = new UsageBarViewModel(
             new WeekdayResetLabelFormatter(CultureInfo.InvariantCulture, TimeZoneInfo.Local),
             percentFormatter,
-            alertPolicy);
+            severityPolicy);
 
         var viewModel = new WidgetViewModel(fiveHour, sevenDay);
 

@@ -4,29 +4,29 @@ using ClaudeUsageWidget.Domain;
 namespace ClaudeUsageWidget.Presentation.Wpf.ViewModels;
 
 /// <summary>
-/// Estado de una barra listo para pintar. Deliberadamente sin tipos de WPF:
-/// los pinceles se eligen en XAML a partir de <see cref="IsAlerting"/>.
+/// State of one bar, ready to paint. Deliberately free of WPF types:
+/// the fill brush is picked in XAML from <see cref="Severity"/>.
 /// </summary>
 public sealed class UsageBarViewModel : ObservableObject
 {
     private readonly IResetLabelFormatter _resetLabelFormatter;
     private readonly UsagePercentLabelFormatter _percentLabelFormatter;
-    private readonly UsageAlertPolicy _alertPolicy;
+    private readonly UsageSeverityPolicy _severityPolicy;
 
     private double _fraction;
     private string _resetLabel = ResetLabelPlaceholders.Unknown;
     private string _percentLabel = ResetLabelPlaceholders.Unknown;
-    private bool _isAlerting;
+    private UsageSeverity _severity;
     private bool _hasData;
 
     public UsageBarViewModel(
         IResetLabelFormatter resetLabelFormatter,
         UsagePercentLabelFormatter percentLabelFormatter,
-        UsageAlertPolicy alertPolicy)
+        UsageSeverityPolicy severityPolicy)
     {
         _resetLabelFormatter = resetLabelFormatter;
         _percentLabelFormatter = percentLabelFormatter;
-        _alertPolicy = alertPolicy;
+        _severityPolicy = severityPolicy;
     }
 
     public double Fraction
@@ -47,10 +47,10 @@ public sealed class UsageBarViewModel : ObservableObject
         private set => SetField(ref _percentLabel, value);
     }
 
-    public bool IsAlerting
+    public UsageSeverity Severity
     {
-        get => _isAlerting;
-        private set => SetField(ref _isAlerting, value);
+        get => _severity;
+        private set => SetField(ref _severity, value);
     }
 
     public bool HasData
@@ -65,6 +65,6 @@ public sealed class UsageBarViewModel : ObservableObject
         Fraction = window?.Used.AsFraction ?? 0d;
         PercentLabel = _percentLabelFormatter.Format(window);
         ResetLabel = _resetLabelFormatter.Format(window, now);
-        IsAlerting = _alertPolicy.IsAlerting(window);
+        Severity = _severityPolicy.Classify(window);
     }
 }

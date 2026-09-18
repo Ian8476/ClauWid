@@ -2,40 +2,50 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=System.Runtime">
 
-    <!-- Colores muestreados pixel a pixel del mockup. No aproximar. -->
-    <Color x:Key="SurfaceColor">#FF241E1E</Color>
-    <Color x:Key="TrackColor">#FFFFFFFF</Color>
-    <Color x:Key="FiveHourAccentColor">#FF38B6FF</Color>
-    <Color x:Key="SevenDayAccentColor">#FFFFDE59</Color>
-    <Color x:Key="AlertAccentColor">#FFFF5F56</Color>
-    <Color x:Key="LabelColor">#FFFFFFFF</Color>
+    <!-- Neutrals sampled from the minimal mockup. -->
+    <Color x:Key="SurfaceColor">#FF17181C</Color>
+    <Color x:Key="TrackColor">#FF2F323A</Color>
+    <Color x:Key="LabelColor">#FFF2F3F5</Color>
+    <Color x:Key="PercentLabelColor">#FFC9CCD4</Color>
+
+    <!--
+        One fill color per severity band, shared by both bars. The thresholds that pick the
+        band live in UsageSeverityPolicy: 0-50% low, 50-70% moderate, 70-85% high, 85%+ critical.
+        Blue and yellow come from the mockup; orange and red match their saturation and lightness.
+    -->
+    <Color x:Key="LowUsageColor">#FF409FF8</Color>
+    <Color x:Key="ModerateUsageColor">#FFF8D659</Color>
+    <Color x:Key="HighUsageColor">#FFF79845</Color>
+    <Color x:Key="CriticalUsageColor">#FFF4554E</Color>
 
     <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
     <SolidColorBrush x:Key="TrackBrush" Color="{StaticResource TrackColor}" />
-    <SolidColorBrush x:Key="FiveHourAccentBrush" Color="{StaticResource FiveHourAccentColor}" />
-    <SolidColorBrush x:Key="SevenDayAccentBrush" Color="{StaticResource SevenDayAccentColor}" />
-    <SolidColorBrush x:Key="AlertAccentBrush" Color="{StaticResource AlertAccentColor}" />
     <SolidColorBrush x:Key="LabelBrush" Color="{StaticResource LabelColor}" />
+    <SolidColorBrush x:Key="PercentLabelBrush" Color="{StaticResource PercentLabelColor}" />
+    <SolidColorBrush x:Key="LowUsageBrush" Color="{StaticResource LowUsageColor}" />
+    <SolidColorBrush x:Key="ModerateUsageBrush" Color="{StaticResource ModerateUsageColor}" />
+    <SolidColorBrush x:Key="HighUsageBrush" Color="{StaticResource HighUsageColor}" />
+    <SolidColorBrush x:Key="CriticalUsageBrush" Color="{StaticResource CriticalUsageColor}" />
 
     <!--
-        Montserrat ExtraBold viene empotrada. El nombre de familia del archivo estatico
-        es "Montserrat ExtraBold" con subfamilia "Regular", asi que el peso se deja en
-        Normal: poner Bold aqui produciria un falso negrita sintetico sobre una fuente
-        que ya es pesada.
+        Montserrat Medium is embedded. The file declares family "Montserrat" with weight
+        Medium, so the weight is requested explicitly: that selects the face by name instead
+        of relying on WPF's nearest-weight fallback.
     -->
-    <FontFamily x:Key="WidgetFontFamily">pack://application:,,,/Assets/Fonts/#Montserrat ExtraBold</FontFamily>
-    <sys:Double x:Key="LabelFontSize">18</sys:Double>
+    <FontFamily x:Key="WidgetFontFamily">pack://application:,,,/Assets/Fonts/#Montserrat</FontFamily>
+    <FontWeight x:Key="LabelFontWeight">Medium</FontWeight>
+    <sys:Double x:Key="LabelFontSize">13</sys:Double>
 
-    <!-- Escala derivada del mockup: alto de barra 68px sobre una tarjeta de 1479px. -->
+    <!-- Proportions taken from the mockup: a thin bar under small labels, plenty of air. -->
     <sys:Double x:Key="WidgetWidth">436</sys:Double>
-    <sys:Double x:Key="BarHeight">20</sys:Double>
-    <CornerRadius x:Key="BarCornerRadius">10</CornerRadius>
+    <sys:Double x:Key="BarHeight">6</sys:Double>
+    <CornerRadius x:Key="BarCornerRadius">3</CornerRadius>
     <CornerRadius x:Key="SurfaceCornerRadius">14</CornerRadius>
-    <Thickness x:Key="SurfacePadding">16</Thickness>
-    <Thickness x:Key="BarToLabelSpacing">0,5,0,0</Thickness>
-    <Thickness x:Key="BetweenRowsSpacing">0,14,0,0</Thickness>
+    <Thickness x:Key="SurfacePadding">20,18</Thickness>
+    <Thickness x:Key="LabelToBarSpacing">0,0,0,6</Thickness>
+    <Thickness x:Key="BetweenRowsSpacing">0,18,0,0</Thickness>
 
-    <!-- Franja invisible junto al borde donde el cursor pasa a redimensionar en vez de mover. -->
+    <!-- Invisible strip along the edge where the cursor resizes instead of moving. -->
     <Thickness x:Key="ResizeBorderThickness">8</Thickness>
 
     <sys:Double x:Key="DimmedOpacity">0.35</sys:Double>
