@@ -35,7 +35,10 @@ public sealed class WidgetCompositionRoot : IDisposable
         IClock clock = new SystemClock();
 
         _provider = new ClaudeOAuthUsageProvider(
-            new ClaudeCodeCredentialsReader(clock), clock, new ClaudeOAuthUsageOptions());
+            new ClaudeCodeCredentialsReader(clock),
+            new ClaudeCliSessionRefresher(clock, new ClaudeCliSessionRefresherOptions()),
+            clock,
+            new ClaudeOAuthUsageOptions());
 
         var alertPolicy = new UsageAlertPolicy();
         var percentFormatter = new UsagePercentLabelFormatter();
