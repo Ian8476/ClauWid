@@ -1,72 +1,145 @@
 name: Release
 
-# Se dispara al empujar una etiqueta "vX.Y.Z" (p. ej. git tag v1.0.1 && git push origin v1.0.1).
-# workflow_dispatch permite lanzarlo a mano desde la pestaña Actions, con la misma etiqueta
-# como entrada, para reconstruir un release sin tener que borrar y volver a crear el tag.
+# Every push to main builds the widget and publishes it as a new GitHub release. The version is
+# the latest vX.Y.Z tag with its patch number bumped (v1.0.1 -> v1.0.2), so nothing has to be
+# tagged by hand.
+#
+# To bump the minor or major version instead, push a tag yourself
+# (git tag v1.1.0 && git push origin v1.1.0): that tag is released as-is and later pushes to main
+# continue from it (v1.1.1, v1.1.2, ...).
+#
+# workflow_dispatch rebuilds an existing tag from the Actions tab, without deleting and
+# recreating it.
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*.*.*"
+    # A docs-only change is not worth a new release. Path filters never apply to tag pushes.
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Etiqueta a publicar (ej. v1.0.1). Debe existir ya en el repositorio.'
+        description: "Existing tag to rebuild (e.g. v1.0.1)."
         required: true
 
 permissions:
   contents: write
 
+# One release at a time: two quick pushes to main would otherwise both read v1.0.1 as the
+# latest tag and both try to publish v1.0.2.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   build-and-release:
-    # WPF con net8.0-windows solo compila sobre Windows, no hay runner Linux que sirva aqui.
+    # WPF on net8.0-windows only builds on Windows; no Linux runner can do this.
     runs-on: windows-latest
 
     steps:
-      - name: Descargar el codigo
-        uses: actions/checkout@v4
+      - name: Check out the code
+        uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.tag || github.ref }}
+          # github.sha, not the branch name: a run queued behind another one must still build (and
+          # tag) the commit that triggered it, not whatever main points to by the time it starts.
+          ref: ${{ inputs.tag || github.sha }}
+          # Full history and every tag, needed to find the latest version below.
+          fetch-depth: 0
 
-      - name: Instalar el SDK de .NET
-        uses: actions/setup-dotnet@v4
+      - name: Work out the release version
+        id: version
+        shell: pwsh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          $semverTag = '^v(\d+)\.(\d+)\.(\d+)$'
+
+          if ($env:EVENT_NAME -eq 'workflow_dispatch') {
+            $tag = $env:INPUT_TAG
+          }
+          elseif ($env:REF_TYPE -eq 'tag') {
+            $tag = $env:REF_NAME
+          }
+          else {
+            # A commit that already has a version tag keeps it. This makes re-running a failed
+            # run idempotent instead of burning a new version number every time.
+            $tag = git tag --points-at HEAD --list 'v*.*.*' |
+              Where-Object { $_ -match $semverTag } |
+              Select-Object -First 1
+
+            if (-not $tag) {
+              $latest = git tag --list 'v*.*.*' |
+                Where-Object { $_ -match $semverTag } |
+                ForEach-Object { [version]$_.Substring(1) } |
+                Sort-Object -Descending |
+                Select-Object -First 1
+
+              $tag = if ($latest) { "v$($latest.Major).$($latest.Minor).$($latest.Build + 1)" } else { 'v1.0.0' }
+            }
+          }
+
+          if ($tag -notmatch $semverTag) {
+            throw "'$tag' is not a vX.Y.Z tag."
+          }
+
+          Write-Host "Releasing $tag"
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "number=$($tag.Substring(1))" >> $env:GITHUB_OUTPUT
+
+      - name: Install the .NET SDK
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: "8.0.x"
 
-      - name: Restaurar dependencias
+      - name: Restore dependencies
         run: dotnet restore ClaudeUsageWidget.sln
 
-      # --self-contained false: el runtime de .NET 8 Desktop queda como requisito del usuario,
-      # igual que en el release v1.0.0. Un solo .exe en vez de una carpeta llena de DLLs.
-      - name: Publicar en Release (win-x64, un solo archivo)
+      # --self-contained false: the .NET 8 Desktop Runtime stays a requirement on the user's side,
+      # same as every release so far. A single .exe instead of a folder full of DLLs.
+      # -p:Version stamps the release number into the .exe (Properties -> Details in Explorer).
+      - name: Publish in Release (win-x64, single file)
         run: >
           dotnet publish src/ClaudeUsageWidget.Presentation.Wpf
           -c Release
           -r win-x64
           --self-contained false
           -p:PublishSingleFile=true
+          -p:Version=${{ steps.version.outputs.number }}
           -o publish
 
-      # Los .pdb son simbolos de depuracion: utiles en el equipo de build, inutiles (y pesados)
-      # en el zip que descarga el usuario final.
-      - name: Quitar simbolos de depuracion
+      # .pdb files are debug symbols: useful on the build machine, useless (and heavy) in the zip
+      # the end user downloads.
+      - name: Remove debug symbols
+        shell: pwsh
         run: Remove-Item publish\*.pdb -ErrorAction SilentlyContinue
-        shell: pwsh
 
-      - name: Empaquetar en zip
+      - name: Package as zip
+        shell: pwsh
         run: Compress-Archive -Path publish\* -DestinationPath ClaudeUsageWidget-win-x64.zip
-        shell: pwsh
 
-      - name: Publicar el release en GitHub
-        uses: softprops/action-gh-release@v2
+      # The tag does not exist yet on a push to main: the release action creates it, pointing at
+      # the exact commit that was just built.
+      - name: Publish the GitHub release
+        uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ inputs.tag || github.ref_name }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           files: ClaudeUsageWidget-win-x64.zip
+          fail_on_unmatched_files: true
           generate_release_notes: true
           body: |
-            **Que incluye:** el .exe y la carpeta Assets (tipografia) empaquetados juntos en el zip.
+            **What's included:** the .exe and the Assets folder (font) packaged together in the zip.
 
-            **Requisitos:**
-            - Windows con el [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) instalado.
-            - Claude Code con sesion iniciada (`claude`, luego `/login`): el widget lee el token de ahi para consultar tu consumo real.
+            **Requirements:**
+            - Windows with the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) installed.
+            - Claude Code signed in (`claude`, then `/login`): the widget reads its token from there to fetch your real usage.
 
-            **Uso:** descomprime el zip en cualquier carpeta y ejecuta `ClaudeUsageWidget.exe`. Arrastra para mover, arrastra un borde para redimensionar, clic derecho para el menu.
+            **Usage:** unzip anywhere and run `ClaudeUsageWidget.exe`. Drag to move, drag an edge to resize, right-click for the menu.
