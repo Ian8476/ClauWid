@@ -12,6 +12,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClaudeUsageWidget.Infrastru
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClaudeUsageWidget.Presentation.Wpf", "src\ClaudeUsageWidget.Presentation.Wpf\ClaudeUsageWidget.Presentation.Wpf.csproj", "{ED2899C5-FA23-44F0-813D-4F4850544D46}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClaudeUsageWidget.Tests", "tests\ClaudeUsageWidget.Tests\ClaudeUsageWidget.Tests.csproj", "{16E6D7F6-A62C-480E-855C-50CE038F384A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,6 +38,10 @@ Global
 		{ED2899C5-FA23-44F0-813D-4F4850544D46}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ED2899C5-FA23-44F0-813D-4F4850544D46}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ED2899C5-FA23-44F0-813D-4F4850544D46}.Release|Any CPU.Build.0 = Release|Any CPU
+		{16E6D7F6-A62C-480E-855C-50CE038F384A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{16E6D7F6-A62C-480E-855C-50CE038F384A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{16E6D7F6-A62C-480E-855C-50CE038F384A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{16E6D7F6-A62C-480E-855C-50CE038F384A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -43,6 +51,7 @@ Global
 		{8460DB11-E22E-40C7-B40C-8AAB726F8CBA} = {56B7DF7C-B0D6-4595-84CD-FBF3EEC28862}
 		{AA9CF8D0-9EFE-4C33-9653-EFE0AE423293} = {56B7DF7C-B0D6-4595-84CD-FBF3EEC28862}
 		{ED2899C5-FA23-44F0-813D-4F4850544D46} = {56B7DF7C-B0D6-4595-84CD-FBF3EEC28862}
+		{16E6D7F6-A62C-480E-855C-50CE038F384A} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {1CEC21B9-DD57-4E36-BB9C-9FDC2C8C38FC}

@@ -26,7 +26,10 @@ public sealed class WidgetTrayIcon : IDisposable
     // Limite de NotifyIcon.Text: un texto mas largo lanza ArgumentOutOfRangeException.
     private const int MaxTooltipLength = 127;
 
-    private static readonly Uri IconUri = new("pack://application:,,,/Assets/Icons/ClaudeUsageWidget.ico");
+    // Named after this assembly instead of relying on "application", which means whichever
+    // exe hosts the code: under a test runner that is the runner, not the widget.
+    private static readonly Uri IconUri = new(
+        $"pack://application:,,,/{typeof(WidgetTrayIcon).Assembly.GetName().Name};component/Assets/Icons/ClaudeUsageWidget.ico");
 
     private readonly Window _window;
     private readonly WidgetViewModel _viewModel;
