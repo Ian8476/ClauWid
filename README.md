@@ -1,81 +1,86 @@
 # Claude Usage Widget
 
-Widget flotante para Windows que muestra el consumo de tu suscripción de Claude
-directamente en el escritorio: dos barras, la ventana de 5 horas y la semanal, con los
-mismos datos que ves al escribir `/usage` dentro de Claude Code.
+A floating Windows widget that shows your Claude subscription usage right on the desktop:
+two bars, the 5-hour window and the weekly window, with the same data you see when you
+type `/usage` inside Claude Code.
 
-Sin pestañas que abrir ni comandos que recordar — el número que importa, siempre a la vista.
+![Claude Usage Widget showing the 5-hour bar at 16% and the weekly bar at 44%](docs/widget.png)
 
-## Qué hace
+No tabs to open, no commands to remember — the number that matters, always in sight.
 
-- **Datos reales**, no una estimación: consulta el mismo endpoint que usa Claude Code,
-  autenticado con tu sesión ya iniciada.
-- **Dos barras**, consumo de 5 horas y consumo semanal, cada una con su porcentaje y su
-  hora de reinicio.
+## What it does
+
+- **Real data**, not an estimate: it queries the same endpoint Claude Code uses,
+  authenticated with the session you already have.
+- **Two bars**, 5-hour usage and weekly usage, each with its percentage and its
+  reset time.
 - **Color by usage**, the same on both bars: blue below 50%, yellow below 70%, orange
   below 85% and red from there on.
-- **Ventana redimensionable**: arrastra un borde o una esquina y el texto, las barras y
-  los márgenes escalan juntos. Arrastra desde el centro para moverla.
-- **Siempre visible** opcional, y recuerda su posición y tamaño entre sesiones.
-- Sin marco, sin barra de título, sin icono en la barra de tareas: es un widget, no una
-  ventana más.
+- **Resizable window**: drag an edge or a corner and the text, the bars and the margins
+  scale together. Drag from the middle to move it.
+- Optional **always on top**, and it remembers its position and size between sessions.
+- No frame, no title bar, no taskbar button: it's a widget, not just another window.
 
-## Descargar y ejecutar
+## Download and run
 
-1. Ve a [Releases](https://github.com/Ian8476/ClauWid/releases/latest) y descarga
+1. Go to [Releases](https://github.com/Ian8476/ClauWid/releases/latest) and download
    `ClaudeUsageWidget-win-x64.zip`.
-2. Descomprímelo en cualquier carpeta (el `.exe` necesita la carpeta `Assets` a su lado,
-   por la tipografía).
-3. Ejecuta `ClaudeUsageWidget.exe`.
+2. Unzip it into any folder (the `.exe` needs the `Assets` folder next to it, for the
+   font).
+3. Run `ClaudeUsageWidget.exe`.
 
-**Requisitos:**
+**Requirements:**
 
-- Windows 10 o superior.
-- [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) instalado
-  (el `.exe` no lo trae empotrado).
-- [Claude Code](https://claude.com/claude-code) instalado con sesión iniciada
-  (`claude`, luego `/login`). El widget lee el token de ahí; no pide credenciales propias.
+- Windows 10 or later.
+- [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) installed
+  (the `.exe` does not bundle it).
+- [Claude Code](https://claude.com/claude-code) installed and signed in
+  (`claude`, then `/login`). The widget reads the token from there; it never asks for
+  credentials of its own.
 
-## Uso
+## Usage
 
-| Acción | Cómo |
+The menus are in Spanish; the labels below are shown as they appear in the app.
+
+| Action | How |
 |---|---|
-| Mover la ventana | Arrastrar con el botón izquierdo desde cualquier punto de la superficie |
-| Cambiar el tamaño | Arrastrar desde cualquier borde o esquina |
-| Restablecer el tamaño | Clic derecho → "Restablecer tamaño" |
-| Mantenerla siempre visible | Clic derecho → "Siempre visible" |
-| Cerrarla | Clic derecho → "Cerrar" |
+| Move the window | Left-drag from anywhere on its surface |
+| Resize it | Drag from any edge or corner |
+| Reset the size | Right-click → "Restablecer tamaño" |
+| Keep it always on top | Right-click → "Siempre visible" |
+| Hide it | Right-click → "Ocultar" (bring it back from the tray icon → "Mostrar widget") |
+| Quit | Right-click → "Salir", or tray icon → "Salir" |
 
-Posición y tamaño se guardan en `%LOCALAPPDATA%\ClaudeUsageWidget\placement.json`, uno
-por cada combinación de monitores: si a veces usas un solo monitor de 1920x1080 y otras
-un 2K junto a ese mismo 1920x1080, el widget recuerda dónde lo dejaste en cada caso y
-vuelve ahí al abrirlo o al conectar y desconectar pantallas. Si la posición recordada
-quedara fuera de la vista, se centra en el monitor principal.
+Position and size are saved in `%LOCALAPPDATA%\ClaudeUsageWidget\placement.json`, one
+entry per monitor combination: if you sometimes use a single 1920x1080 monitor and other
+times a 2K display next to that same 1920x1080, the widget remembers where you left it in
+each case and goes back there when it opens or when you plug and unplug screens. If the
+remembered position would end up off-screen, it is centered on the primary monitor.
 
-Si ves `--` en vez de un porcentaje, es que el widget no pudo leer tu consumo: revisa que
-Claude Code tenga una sesión activa (`claude` en una terminal). El dato no desaparece de
-golpe — mientras la fuente esté caída, se queda con la última lectura conocida.
+If you see `--` instead of a percentage, the widget couldn't read your usage: check that
+Claude Code has an active session (`claude` in a terminal). The data doesn't vanish all
+at once — while the source is down, the widget keeps the last known reading.
 
-## De dónde salen los datos
+## Where the data comes from
 
-El widget lee el token OAuth que Claude Code deja en
-`%USERPROFILE%\.claude\.credentials.json` (o en `CLAUDE_CONFIG_DIR`, si lo tienes
-definido) y consulta `https://api.anthropic.com/api/oauth/usage` cada minuto.
+The widget reads the OAuth token that Claude Code stores in
+`%USERPROFILE%\.claude\.credentials.json` (or in `CLAUDE_CONFIG_DIR`, if you have it
+set) and queries `https://api.anthropic.com/api/oauth/usage` every minute.
 
-- **Nunca renueva el token por su cuenta:** hacerlo rotaría el refresh token y cerraría la
-  sesión de Claude Code. Cuando lo encuentra caducado, algo habitual si trabajas solo con
-  la app de escritorio, ejecuta `claude doctor` en segundo plano, sin ventana y como
-  mucho una vez cada 15 minutos: así es el propio CLI de Claude Code quien revisa su sesión
-  y la renueva. Ese comando no consume cuota. Mientras tanto, el widget conserva el último
-  dato conocido.
-- **Nada sale de tu equipo** salvo esa consulta a la API de Anthropic con tu propio token.
-  No hay telemetría ni servidor intermedio.
-- **Endpoint no documentado**, el mismo que usa Claude Code internamente y que puede
-  cambiar sin aviso. Si cambia, el widget muestra `--` en vez de inventar un número.
+- **It never refreshes the token on its own:** doing so would rotate the refresh token
+  and sign Claude Code out. When it finds the token expired, which is common if you only
+  work with the desktop app, it runs `claude doctor` in the background, with no window
+  and at most once every 15 minutes: that way it's Claude Code's own CLI that checks its
+  session and renews it. That command doesn't consume quota. Meanwhile, the widget keeps
+  the last known data.
+- **Nothing leaves your machine** except that query to the Anthropic API with your own
+  token. There's no telemetry and no intermediate server.
+- **Undocumented endpoint**, the same one Claude Code uses internally, and it may change
+  without notice. If it changes, the widget shows `--` instead of making up a number.
 
-## Créditos
+## Credits
 
-Montserrat Medium viene empotrada en `src/ClaudeUsageWidget.Presentation.Wpf/Assets/Fonts`
-bajo licencia [SIL Open Font License 1.1](src/ClaudeUsageWidget.Presentation.Wpf/Assets/Fonts/OFL.txt).
+Montserrat Medium is embedded in `src/ClaudeUsageWidget.Presentation.Wpf/Assets/Fonts`
+under the [SIL Open Font License 1.1](src/ClaudeUsageWidget.Presentation.Wpf/Assets/Fonts/OFL.txt).
 
-Este proyecto no está afiliado a Anthropic. "Claude" es una marca de Anthropic PBC.
+This project is not affiliated with Anthropic. "Claude" is a trademark of Anthropic PBC.
