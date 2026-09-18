@@ -24,15 +24,18 @@ public sealed class ClaudeOAuthUsageProvider : IUsageSnapshotProvider, IDisposab
     private const string UserAgentVersion = "1.0";
 
     private readonly ClaudeCodeCredentialsReader _credentialsReader;
+    private readonly ClaudeCliSessionRefresher _sessionRefresher;
     private readonly IClock _clock;
     private readonly HttpClient _httpClient;
 
     public ClaudeOAuthUsageProvider(
         ClaudeCodeCredentialsReader credentialsReader,
+        ClaudeCliSessionRefresher sessionRefresher,
         IClock clock,
         ClaudeOAuthUsageOptions options)
     {
         _credentialsReader = credentialsReader;
+        _sessionRefresher = sessionRefresher;
         _clock = clock;
         _httpClient = new HttpClient
         {
@@ -45,8 +48,7 @@ public sealed class ClaudeOAuthUsageProvider : IUsageSnapshotProvider, IDisposab
 
     public async Task<UsageSnapshot?> GetLatestAsync(CancellationToken cancellationToken)
     {
-        // El archivo se relee en cada consulta: Claude Code renueva el token por su cuenta.
-        if (_credentialsReader.ReadAccessToken() is not { } accessToken)
+        if (await ReadAccessTokenAsync(cancellationToken) is not { } accessToken)
         {
             return null;
         }
@@ -80,6 +82,28 @@ public sealed class ClaudeOAuthUsageProvider : IUsageSnapshotProvider, IDisposab
     }
 
     public void Dispose() => _httpClient.Dispose();
+
+    /// <summary>
+    /// El archivo se relee en cada consulta: Claude Code renueva el token cada vez que se usa.
+    /// Si esta caducado, cosa habitual cuando solo se usa la app de escritorio, se le pide al
+    /// CLI que revise su sesion y se vuelve a leer lo que haya dejado escrito.
+    /// </summary>
+    private async Task<string?> ReadAccessTokenAsync(CancellationToken cancellationToken)
+    {
+        var reading = _credentialsReader.Read();
+
+        if (reading.State is not AccessTokenState.Expired)
+        {
+            return reading.AccessToken;
+        }
+
+        if (!await _sessionRefresher.TryRenewSessionAsync(cancellationToken))
+        {
+            return null;
+        }
+
+        return _credentialsReader.Read().AccessToken;
+    }
 
     /// <summary>utilization ya viene en escala 0-100, igual que el "N% used" de Claude Code.</summary>
     private static UsageWindow? ToWindow(UsageWindowKind kind, UsageLimit? limit)

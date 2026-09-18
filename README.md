@@ -61,9 +61,12 @@ El widget lee el token OAuth que Claude Code deja en
 `%USERPROFILE%\.claude\.credentials.json` (o en `CLAUDE_CONFIG_DIR`, si lo tienes
 definido) y consulta `https://api.anthropic.com/api/oauth/usage` cada 2 minutos.
 
-- **Solo lectura.** Nunca renueva el token: hacerlo rotaría el refresh token y cerraría
-  la sesión de Claude Code. Si el token caducó porque llevas horas sin usar Claude Code,
-  el widget conserva el último dato hasta que Claude Code lo renueve por su cuenta.
+- **Nunca renueva el token por su cuenta:** hacerlo rotaría el refresh token y cerraría la
+  sesión de Claude Code. Cuando lo encuentra caducado, algo habitual si trabajas solo con
+  la app de escritorio, ejecuta `claude doctor` en segundo plano, sin ventana y como
+  mucho una vez cada 15 minutos: así es el propio CLI de Claude Code quien revisa su sesión
+  y la renueva. Ese comando no consume cuota. Mientras tanto, el widget conserva el último
+  dato conocido.
 - **Nada sale de tu equipo** salvo esa consulta a la API de Anthropic con tu propio token.
   No hay telemetría ni servidor intermedio.
 - **Endpoint no documentado**, el mismo que usa Claude Code internamente y que puede
