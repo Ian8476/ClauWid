@@ -26,7 +26,10 @@ public sealed class ClaudeOAuthUsageProvider : IUsageSnapshotProvider, IDisposab
     private readonly ClaudeCodeCredentialsReader _credentialsReader;
     private readonly ClaudeCliSessionRefresher _sessionRefresher;
     private readonly IClock _clock;
+    private readonly TimeSpan _rateLimitBackoff;
     private readonly HttpClient _httpClient;
+
+    private DateTimeOffset _rateLimitedUntil = DateTimeOffset.MinValue;
 
     public ClaudeOAuthUsageProvider(
         ClaudeCodeCredentialsReader credentialsReader,
@@ -37,6 +40,7 @@ public sealed class ClaudeOAuthUsageProvider : IUsageSnapshotProvider, IDisposab
         _credentialsReader = credentialsReader;
         _sessionRefresher = sessionRefresher;
         _clock = clock;
+        _rateLimitBackoff = options.RateLimitBackoff;
         _httpClient = new HttpClient
         {
             BaseAddress = options.BaseAddress,
@@ -48,6 +52,12 @@ public sealed class ClaudeOAuthUsageProvider : IUsageSnapshotProvider, IDisposab
 
     public async Task<UsageSnapshot?> GetLatestAsync(CancellationToken cancellationToken)
     {
+        // Asking again while rate limited only prolongs it. The widget keeps the last reading.
+        if (_clock.Now < _rateLimitedUntil)
+        {
+            return null;
+        }
+
         if (await ReadAccessTokenAsync(cancellationToken) is not { } accessToken)
         {
             return null;
@@ -58,6 +68,13 @@ public sealed class ClaudeOAuthUsageProvider : IUsageSnapshotProvider, IDisposab
         request.Headers.Add(BetaHeaderName, OAuthBetaVersion);
 
         using var response = await _httpClient.SendAsync(request, cancellationToken);
+
+        if (response.StatusCode is HttpStatusCode.TooManyRequests)
+        {
+            _rateLimitedUntil = RetryAt(response.Headers.RetryAfter, _clock.Now);
+            Debug.WriteLine($"Claude usage: rate limited (429), next try at {_rateLimitedUntil:T}.");
+            return null;
+        }
 
         if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
         {
@@ -104,6 +121,14 @@ public sealed class ClaudeOAuthUsageProvider : IUsageSnapshotProvider, IDisposab
 
         return _credentialsReader.Read().AccessToken;
     }
+
+    /// <summary>Retry-After comes as either a delay or a date; without it, the configured backoff applies.</summary>
+    private DateTimeOffset RetryAt(RetryConditionHeaderValue? retryAfter, DateTimeOffset now) => retryAfter switch
+    {
+        { Delta: { } delay } => now + delay,
+        { Date: { } date } => date,
+        _ => now + _rateLimitBackoff
+    };
 
     /// <summary>utilization ya viene en escala 0-100, igual que el "N% used" de Claude Code.</summary>
     private static UsageWindow? ToWindow(UsageWindowKind kind, UsageLimit? limit)

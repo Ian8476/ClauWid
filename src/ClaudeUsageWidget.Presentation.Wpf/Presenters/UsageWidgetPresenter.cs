@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Windows.Threading;
+using Microsoft.Win32;
 using ClaudeUsageWidget.Application.Abstractions;
 using ClaudeUsageWidget.Presentation.Wpf.ViewModels;
 
@@ -15,6 +16,7 @@ public sealed class UsageWidgetPresenter : IDisposable
     private readonly WidgetViewModel _viewModel;
     private readonly IUsageSnapshotProvider _provider;
     private readonly IClock _clock;
+    private readonly Dispatcher _dispatcher;
     private readonly DispatcherTimer _fetchTimer;
     private readonly DispatcherTimer _countdownTimer;
     private readonly CancellationTokenSource _lifetime = new();
@@ -32,6 +34,7 @@ public sealed class UsageWidgetPresenter : IDisposable
         _viewModel = viewModel;
         _provider = provider;
         _clock = clock;
+        _dispatcher = dispatcher;
 
         _fetchTimer = new DispatcherTimer(DispatcherPriority.Background, dispatcher)
         {
@@ -52,6 +55,42 @@ public sealed class UsageWidgetPresenter : IDisposable
     /// </summary>
     public void Start()
     {
+        SystemEvents.SessionSwitch += OnSessionSwitch;
+        Resume();
+    }
+
+    /// <summary>
+    /// Nobody can see the widget on a locked session, so polling stops until the unlock,
+    /// which reads right away instead of waiting out the interval.
+    /// SystemEvents may raise this off the UI thread, and the timers belong to the dispatcher.
+    /// </summary>
+    private void OnSessionSwitch(object sender, SessionSwitchEventArgs args)
+    {
+        switch (args.Reason)
+        {
+            case SessionSwitchReason.SessionLock:
+                _dispatcher.InvokeAsync(Pause);
+                break;
+
+            case SessionSwitchReason.SessionUnlock:
+                _dispatcher.InvokeAsync(Resume);
+                break;
+        }
+    }
+
+    private void Pause()
+    {
+        _fetchTimer.Stop();
+        _countdownTimer.Stop();
+    }
+
+    private void Resume()
+    {
+        if (_lifetime.IsCancellationRequested)
+        {
+            return;
+        }
+
         _viewModel.Refresh(_clock.Now);
         _fetchTimer.Start();
         _countdownTimer.Start();
@@ -94,8 +133,9 @@ public sealed class UsageWidgetPresenter : IDisposable
 
     public void Dispose()
     {
-        _fetchTimer.Stop();
-        _countdownTimer.Stop();
+        // A static event: left subscribed, it would keep this presenter alive.
+        SystemEvents.SessionSwitch -= OnSessionSwitch;
+        Pause();
         _lifetime.Cancel();
         _lifetime.Dispose();
     }

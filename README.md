@@ -60,7 +60,7 @@ golpe — mientras la fuente esté caída, se queda con la última lectura conoc
 
 El widget lee el token OAuth que Claude Code deja en
 `%USERPROFILE%\.claude\.credentials.json` (o en `CLAUDE_CONFIG_DIR`, si lo tienes
-definido) y consulta `https://api.anthropic.com/api/oauth/usage` cada 2 minutos.
+definido) y consulta `https://api.anthropic.com/api/oauth/usage` cada minuto.
 
 - **Nunca renueva el token por su cuenta:** hacerlo rotaría el refresh token y cerraría la
   sesión de Claude Code. Cuando lo encuentra caducado, algo habitual si trabajas solo con

@@ -22,9 +22,9 @@ namespace ClaudeUsageWidget.Presentation.Wpf.Composition;
 /// </summary>
 public sealed class WidgetCompositionRoot : IDisposable
 {
-    // Cada lectura es una llamada de red autenticada: consultar mas a menudo no aporta
-    // precision visible y arriesga respuestas 429.
-    private static readonly TimeSpan FetchInterval = TimeSpan.FromMinutes(2);
+    // Each read is an authenticated network call. Polling faster than this adds no visible
+    // precision and invites 429s, which the provider answers by backing off.
+    private static readonly TimeSpan FetchInterval = TimeSpan.FromMinutes(1);
     private static readonly TimeSpan CountdownInterval = TimeSpan.FromSeconds(30);
 
     private ClaudeOAuthUsageProvider? _provider;

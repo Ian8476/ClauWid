@@ -1,4 +1,6 @@
 using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Threading;
 using ClaudeUsageWidget.Presentation.Wpf.Composition;
 
@@ -16,6 +18,12 @@ public partial class App : System.Windows.Application
     protected override void OnStartup(StartupEventArgs args)
     {
         base.OnStartup(args);
+
+        // Must run before the first window exists. Hardware rendering loads the GPU vendor's
+        // Direct3D driver into the process, well over 100 MB on Intel, to draw two thin bars.
+        // A transparent window is also cheaper in software: on the GPU path every frame is
+        // copied back to system memory anyway.
+        RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
 
         DispatcherUnhandledException += OnDispatcherUnhandledException;
 

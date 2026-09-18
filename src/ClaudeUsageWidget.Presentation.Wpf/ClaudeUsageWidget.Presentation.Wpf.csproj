@@ -10,6 +10,11 @@
     <ApplicationIcon>Assets\Icons\ClaudeUsageWidget.ico</ApplicationIcon>
     <!-- Apagado solo aqui: el codigo generado por XAML no esta bajo nuestro control. -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!--
+      Background GC keeps a dedicated thread to avoid pauses on large heaps. This heap is a
+      few MB and idles almost all the time, so the thread is pure overhead.
+    -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
   </PropertyGroup>
 
   <!--

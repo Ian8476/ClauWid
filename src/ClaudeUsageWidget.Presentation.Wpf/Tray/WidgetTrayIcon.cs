@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Threading;
 using ClaudeUsageWidget.Presentation.Wpf.ViewModels;
 using Drawing = System.Drawing;
 using Forms = System.Windows.Forms;
@@ -34,6 +35,8 @@ public sealed class WidgetTrayIcon : IDisposable
     private readonly Forms.ToolStripMenuItem _toggleItem;
     private readonly Forms.ToolStripMenuItem _topmostItem;
     private readonly Forms.NotifyIcon _notifyIcon;
+
+    private DispatcherOperation? _pendingTooltipUpdate;
 
     public WidgetTrayIcon(Window window, WidgetViewModel viewModel)
     {
@@ -75,6 +78,7 @@ public sealed class WidgetTrayIcon : IDisposable
     {
         _viewModel.FiveHour.PropertyChanged -= OnUsageChanged;
         _viewModel.SevenDay.PropertyChanged -= OnUsageChanged;
+        _pendingTooltipUpdate?.Abort();
 
         // Sin ocultarlo antes, el icono se queda pintado hasta que el raton pasa por encima.
         _notifyIcon.Visible = false;
@@ -110,11 +114,28 @@ public sealed class WidgetTrayIcon : IDisposable
         _window.Activate();
     }
 
-    private void OnUsageChanged(object? sender, PropertyChangedEventArgs args) => UpdateTooltip();
+    /// <summary>
+    /// One refresh changes several properties on both bars in a row. Instead of rebuilding
+    /// the tooltip, and calling into the shell, once per property, a single update is queued
+    /// behind them. Fraction and Severity are not in the text, so they are ignored.
+    /// </summary>
+    private void OnUsageChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName is not (nameof(UsageBarViewModel.PercentLabel)
+            or nameof(UsageBarViewModel.ResetLabel)
+            or nameof(UsageBarViewModel.HasData)))
+        {
+            return;
+        }
+
+        _pendingTooltipUpdate ??= _window.Dispatcher.InvokeAsync(UpdateTooltip, DispatcherPriority.Background);
+    }
 
     /// <summary>Pasar el raton por el icono da el consumo sin tener que abrir el widget.</summary>
     private void UpdateTooltip()
     {
+        _pendingTooltipUpdate = null;
+
         var text = string.Join(
             Environment.NewLine,
             AppName,
