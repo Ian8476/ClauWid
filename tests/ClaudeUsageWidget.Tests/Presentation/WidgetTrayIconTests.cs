@@ -1,7 +1,7 @@
 using System.Reflection;
-using System.Windows;
 using System.Windows.Threading;
 using ClaudeUsageWidget.Presentation.Wpf.Tray;
+using ClaudeUsageWidget.Presentation.Wpf.ViewModels;
 using ClaudeUsageWidget.Tests.Support;
 using Forms = System.Windows.Forms;
 
@@ -15,7 +15,7 @@ public sealed class WidgetTrayIconTests
     public void Turns_a_whole_refresh_into_a_single_tooltip_update() => Sta.Run(() =>
     {
         var viewModel = TestData.NewViewModel();
-        var tray = new WidgetTrayIcon(new Window(), viewModel);
+        var tray = NewTrayIcon(viewModel);
         try
         {
             var notifyIcon = NotifyIconOf(tray);
@@ -40,7 +40,7 @@ public sealed class WidgetTrayIconTests
     public void Ignores_changes_the_tooltip_does_not_show() => Sta.Run(() =>
     {
         var viewModel = TestData.NewViewModel();
-        var tray = new WidgetTrayIcon(new Window(), viewModel);
+        var tray = NewTrayIcon(viewModel);
         try
         {
             viewModel.Apply(TestData.Snapshot(Now, 42.4, 81.6), Now);
@@ -61,13 +61,16 @@ public sealed class WidgetTrayIconTests
     public void Disposing_with_an_update_queued_does_not_throw() => Sta.Run(() =>
     {
         var viewModel = TestData.NewViewModel();
-        var tray = new WidgetTrayIcon(new Window(), viewModel);
+        var tray = NewTrayIcon(viewModel);
 
         viewModel.Apply(TestData.Snapshot(Now, 55, 90), Now);
         tray.Dispose();
 
         Sta.Pump(TimeSpan.FromMilliseconds(50));
     });
+
+    private static WidgetTrayIcon NewTrayIcon(WidgetViewModel viewModel) =>
+        new(new FakeWidgetHost(), viewModel, Dispatcher.CurrentDispatcher);
 
     private static int CountQueuedOperations(Action action)
     {

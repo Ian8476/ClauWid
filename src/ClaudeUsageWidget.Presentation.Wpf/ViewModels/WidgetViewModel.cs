@@ -3,8 +3,8 @@ using ClaudeUsageWidget.Domain;
 namespace ClaudeUsageWidget.Presentation.Wpf.ViewModels;
 
 /// <summary>
-/// Raiz de datos de la ventana. Solo reparte el snapshot entre las dos barras
-/// y expone si el dato que se esta mostrando sigue siendo reciente.
+/// Data root of the window. It hands the snapshot to the two bars, says whether the data on
+/// screen is still recent, and carries the view's refresh requests to whoever reads the source.
 /// </summary>
 public sealed class WidgetViewModel : ObservableObject
 {
@@ -12,6 +12,7 @@ public sealed class WidgetViewModel : ObservableObject
 
     private UsageSnapshot? _lastSnapshot;
     private bool _isStale;
+    private bool _isRefreshing;
 
     public WidgetViewModel(UsageBarViewModel fiveHour, UsageBarViewModel sevenDay)
     {
@@ -28,6 +29,18 @@ public sealed class WidgetViewModel : ObservableObject
         get => _isStale;
         private set => SetField(ref _isStale, value);
     }
+
+    /// <summary>True while a refresh the user asked for is in flight. The periodic reads do not set it.</summary>
+    public bool IsRefreshing
+    {
+        get => _isRefreshing;
+        set => SetField(ref _isRefreshing, value);
+    }
+
+    /// <summary>The user wants a fresh reading now instead of waiting for the next periodic one.</summary>
+    public event EventHandler? RefreshRequested;
+
+    public void RequestRefresh() => RefreshRequested?.Invoke(this, EventArgs.Empty);
 
     public void Apply(UsageSnapshot? snapshot, DateTimeOffset now)
     {
