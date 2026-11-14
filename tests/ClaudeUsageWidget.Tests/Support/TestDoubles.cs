@@ -2,6 +2,7 @@ using System.Globalization;
 using ClaudeUsageWidget.Application.Abstractions;
 using ClaudeUsageWidget.Application.Formatting;
 using ClaudeUsageWidget.Domain;
+using ClaudeUsageWidget.Presentation.Wpf.Taskbar;
 using ClaudeUsageWidget.Presentation.Wpf.ViewModels;
 
 namespace ClaudeUsageWidget.Tests.Support;
@@ -20,6 +21,61 @@ internal sealed class CountingUsageProvider : IUsageSnapshotProvider
     {
         Calls++;
         return Task.FromResult<UsageSnapshot?>(null);
+    }
+}
+
+/// <summary>A widget with no window: it only remembers what it was asked to do.</summary>
+internal sealed class FakeWidgetHost : IWidgetHost
+{
+    public bool IsVisible { get; private set; } = true;
+
+    public int ExitRequests { get; private set; }
+
+    public void Show() => IsVisible = true;
+
+    public void Hide() => IsVisible = false;
+
+    public void Exit() => ExitRequests++;
+}
+
+/// <summary>
+/// A taskbar that is wherever the test says. <see cref="RaiseChanged"/> plays the part of
+/// Windows reporting that it moved.
+/// </summary>
+internal sealed class FakeTaskbarLocator : ITaskbarLocator
+{
+    private Action? _onChanged;
+
+    public TaskbarGeometry? Taskbar { get; set; }
+
+    public int ActiveWatches { get; private set; }
+
+    public TaskbarGeometry? Locate() => Taskbar;
+
+    public IDisposable Watch(TaskbarGeometry taskbar, Action onChanged)
+    {
+        _onChanged = onChanged;
+        ActiveWatches++;
+        return new Subscription(this);
+    }
+
+    public void RaiseChanged() => _onChanged?.Invoke();
+
+    private sealed class Subscription(FakeTaskbarLocator owner) : IDisposable
+    {
+        private bool _isDisposed;
+
+        public void Dispose()
+        {
+            if (_isDisposed)
+            {
+                return;
+            }
+
+            _isDisposed = true;
+            owner._onChanged = null;
+            owner.ActiveWatches--;
+        }
     }
 }
 
