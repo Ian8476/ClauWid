@@ -2,11 +2,10 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=System.Runtime">
 
-    <!-- Neutrals sampled from the minimal mockup. -->
-    <Color x:Key="SurfaceColor">#FF17181C</Color>
-    <Color x:Key="TrackColor">#FF2F323A</Color>
-    <Color x:Key="LabelColor">#FFF2F3F5</Color>
-    <Color x:Key="PercentLabelColor">#FFC9CCD4</Color>
+    <!--
+        Everything that does not depend on the taskbar being dark or light. The neutrals that
+        do (labels, track, button states) live in TaskbarDark.xaml and TaskbarLight.xaml.
+    -->
 
     <!--
         One fill color per severity band, shared by both bars. The thresholds that pick the
@@ -18,14 +17,18 @@
     <Color x:Key="HighUsageColor">#FFF79845</Color>
     <Color x:Key="CriticalUsageColor">#FFF4554E</Color>
 
-    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
-    <SolidColorBrush x:Key="TrackBrush" Color="{StaticResource TrackColor}" />
-    <SolidColorBrush x:Key="LabelBrush" Color="{StaticResource LabelColor}" />
-    <SolidColorBrush x:Key="PercentLabelBrush" Color="{StaticResource PercentLabelColor}" />
     <SolidColorBrush x:Key="LowUsageBrush" Color="{StaticResource LowUsageColor}" />
     <SolidColorBrush x:Key="ModerateUsageBrush" Color="{StaticResource ModerateUsageColor}" />
     <SolidColorBrush x:Key="HighUsageBrush" Color="{StaticResource HighUsageColor}" />
     <SolidColorBrush x:Key="CriticalUsageBrush" Color="{StaticResource CriticalUsageColor}" />
+
+    <!--
+        The widget has no surface of its own: the taskbar shows through. A fully transparent
+        pixel of a layered window lets the mouse through to whatever is underneath, so the
+        slot is painted with the faintest alpha there is. It looks the same and makes the
+        whole slot answer to the mouse, gaps between the labels included.
+    -->
+    <SolidColorBrush x:Key="HitSurfaceBrush" Color="#01000000" />
 
     <!--
         Montserrat Medium is embedded. The file declares family "Montserrat" with weight
@@ -34,20 +37,30 @@
     -->
     <FontFamily x:Key="WidgetFontFamily">pack://application:,,,/Assets/Fonts/#Montserrat</FontFamily>
     <FontWeight x:Key="LabelFontWeight">Medium</FontWeight>
-    <sys:Double x:Key="LabelFontSize">13</sys:Double>
+    <sys:Double x:Key="LabelFontSize">10.5</sys:Double>
 
-    <!-- Proportions taken from the mockup: a thin bar under small labels, plenty of air. -->
-    <sys:Double x:Key="WidgetWidth">436</sys:Double>
-    <sys:Double x:Key="BarHeight">6</sys:Double>
-    <CornerRadius x:Key="BarCornerRadius">3</CornerRadius>
-    <CornerRadius x:Key="SurfaceCornerRadius">14</CornerRadius>
-    <Thickness x:Key="SurfacePadding">20,18</Thickness>
-    <Thickness x:Key="LabelToBarSpacing">0,0,0,6</Thickness>
-    <Thickness x:Key="BetweenRowsSpacing">0,18,0,0</Thickness>
+    <!--
+        The slot is laid out for the standard 48-unit taskbar and scaled as a whole when the
+        real one is thicker or thinner: two thin bars under small labels, then the button.
+    -->
+    <sys:Double x:Key="TaskbarSlotWidth">198</sys:Double>
+    <sys:Double x:Key="TaskbarSlotHeight">48</sys:Double>
+    <Thickness x:Key="TaskbarSlotPadding">10,0,6,0</Thickness>
+    <sys:Double x:Key="BarHeight">3</sys:Double>
+    <CornerRadius x:Key="BarCornerRadius">1.5</CornerRadius>
+    <Thickness x:Key="LabelToBarSpacing">0,0,0,2</Thickness>
+    <Thickness x:Key="BetweenRowsSpacing">0,4,0,0</Thickness>
 
-    <!-- Invisible strip along the edge where the cursor resizes instead of moving. -->
-    <Thickness x:Key="ResizeBorderThickness">8</Thickness>
+    <!-- Segoe Fluent Icons ships with Windows 11; Windows 10 has the same glyph in MDL2. -->
+    <FontFamily x:Key="IconFontFamily">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+    <sys:String x:Key="RefreshGlyph">&#xE72C;</sys:String>
+    <sys:Double x:Key="RefreshGlyphSize">12</sys:Double>
+    <sys:Double x:Key="RefreshButtonSize">28</sys:Double>
+    <CornerRadius x:Key="RefreshButtonCornerRadius">4</CornerRadius>
+    <Thickness x:Key="RefreshButtonMargin">8,0,0,0</Thickness>
 
-    <sys:Double x:Key="DimmedOpacity">0.35</sys:Double>
+    <!-- One turn of the icon while a refresh is in flight, and how fast it settles afterwards. -->
+    <Duration x:Key="RefreshSpinDuration">0:0:0.6</Duration>
+    <Duration x:Key="RefreshSettleDuration">0:0:0.2</Duration>
 
 </ResourceDictionary>

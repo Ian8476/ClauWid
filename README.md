@@ -1,10 +1,10 @@
 # Claude Usage Widget
 
-A floating Windows widget that shows your Claude subscription usage right on the desktop:
-two bars, the 5-hour window and the weekly window, with the same data you see when you
-type `/usage` inside Claude Code.
+A Windows widget that shows your Claude subscription usage right on the taskbar, next to
+the system tray: two bars, the 5-hour window and the weekly window, with the same data you
+see when you type `/usage` inside Claude Code.
 
-![Claude Usage Widget showing the 5-hour bar at 16% and the weekly bar at 44%](docs/widget.png)
+![Claude Usage Widget on the taskbar, showing the 5-hour and the weekly bars and the refresh button](docs/widget.png)
 
 No tabs to open, no commands to remember — the number that matters, always in sight.
 
@@ -16,10 +16,11 @@ No tabs to open, no commands to remember — the number that matters, always in 
   reset time.
 - **Color by usage**, the same on both bars: blue below 50%, yellow below 70%, orange
   below 85% and red from there on.
-- **Resizable window**: drag an edge or a corner and the text, the bars and the margins
-  scale together. Drag from the middle to move it.
-- Optional **always on top**, and it remembers its position and size between sessions.
-- No frame, no title bar, no taskbar button: it's a widget, not just another window.
+- **Part of the taskbar**: it sits right before the system tray, follows the tray when it
+  grows or shrinks, matches the taskbar's dark or light mode, and steps aside with the
+  taskbar when an app goes full screen. There is no window to place or resize.
+- **Refresh button**: asks for your usage again right now instead of waiting for the next
+  automatic reading.
 
 ## Download and run
 
@@ -31,7 +32,8 @@ No tabs to open, no commands to remember — the number that matters, always in 
 
 **Requirements:**
 
-- Windows 10 or later.
+- Windows 11. Windows 10 has the same taskbar structure, but the widget has not been tried
+  there.
 - [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) installed
   (the `.exe` does not bundle it).
 - [Claude Code](https://claude.com/claude-code) installed and signed in
@@ -44,18 +46,13 @@ The menus are in Spanish; the labels below are shown as they appear in the app.
 
 | Action | How |
 |---|---|
-| Move the window | Left-drag from anywhere on its surface |
-| Resize it | Drag from any edge or corner |
-| Reset the size | Right-click → "Restablecer tamaño" |
-| Keep it always on top | Right-click → "Siempre visible" |
+| Read your usage again now | Click the refresh button, or right-click → "Actualizar ahora" |
 | Hide it | Right-click → "Ocultar" (bring it back from the tray icon → "Mostrar widget") |
 | Quit | Right-click → "Salir", or tray icon → "Salir" |
 
-Position and size are saved in `%LOCALAPPDATA%\ClaudeUsageWidget\placement.json`, one
-entry per monitor combination: if you sometimes use a single 1920x1080 monitor and other
-times a 2K display next to that same 1920x1080, the widget remembers where you left it in
-each case and goes back there when it opens or when you plug and unplug screens. If the
-remembered position would end up off-screen, it is centered on the primary monitor.
+The widget takes the space right before the system tray on the primary taskbar. With enough
+apps open for their icons to reach that far, it covers the last ones: Windows does not know
+the space is taken.
 
 If you see `--` instead of a percentage, the widget couldn't read your usage: check that
 Claude Code has an active session (`claude` in a terminal). The data doesn't vanish all
@@ -65,7 +62,9 @@ at once — while the source is down, the widget keeps the last known reading.
 
 The widget reads the OAuth token that Claude Code stores in
 `%USERPROFILE%\.claude\.credentials.json` (or in `CLAUDE_CONFIG_DIR`, if you have it
-set) and queries `https://api.anthropic.com/api/oauth/usage` every minute.
+set) and queries `https://api.anthropic.com/api/oauth/usage` every minute, and whenever you
+press the refresh button. If the API answers that it is being asked too often, the widget
+stops asking for as long as it is told to, button included, and keeps the last reading.
 
 - **It never refreshes the token on its own:** doing so would rotate the refresh token
   and sign Claude Code out. When it finds the token expired, which is common if you only

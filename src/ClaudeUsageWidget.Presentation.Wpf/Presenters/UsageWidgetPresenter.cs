@@ -13,6 +13,10 @@ namespace ClaudeUsageWidget.Presentation.Wpf.Presenters;
 /// </summary>
 public sealed class UsageWidgetPresenter : IDisposable
 {
+    // One full turn of the refresh icon. A read that comes back faster than this would
+    // otherwise leave no trace on screen, and the click would look ignored.
+    private static readonly TimeSpan MinimumRefreshFeedback = TimeSpan.FromMilliseconds(600);
+
     private readonly WidgetViewModel _viewModel;
     private readonly IUsageSnapshotProvider _provider;
     private readonly IClock _clock;
@@ -47,6 +51,8 @@ public sealed class UsageWidgetPresenter : IDisposable
             Interval = countdownInterval
         };
         _countdownTimer.Tick += (_, _) => _viewModel.Refresh(_clock.Now);
+
+        _viewModel.RefreshRequested += OnRefreshRequested;
     }
 
     /// <summary>
@@ -98,6 +104,40 @@ public sealed class UsageWidgetPresenter : IDisposable
     }
 
     /// <summary>
+    /// The refresh button: read the source now instead of at the next tick. The periodic
+    /// timer starts over, so the automatic read that follows is a whole interval away rather
+    /// than seconds behind this one. If a read is already in flight this adds none: its
+    /// answer is the fresh data the user asked for.
+    /// </summary>
+    private async void OnRefreshRequested(object? sender, EventArgs args)
+    {
+        if (_viewModel.IsRefreshing || _lifetime.IsCancellationRequested)
+        {
+            return;
+        }
+
+        _viewModel.IsRefreshing = true;
+        try
+        {
+            if (_fetchTimer.IsEnabled)
+            {
+                _fetchTimer.Stop();
+                _fetchTimer.Start();
+            }
+
+            await Task.WhenAll(FetchAsync(), Task.Delay(MinimumRefreshFeedback, _lifetime.Token));
+        }
+        catch (OperationCanceledException)
+        {
+            // The app is closing. FetchAsync has already dealt with its own failures.
+        }
+        finally
+        {
+            _viewModel.IsRefreshing = false;
+        }
+    }
+
+    /// <summary>
     /// Una lectura lenta no debe encolar otra encima. Si la anterior sigue viva,
     /// este tick se descarta en lugar de acumular trabajo.
     /// </summary>
@@ -135,6 +175,7 @@ public sealed class UsageWidgetPresenter : IDisposable
     {
         // A static event: left subscribed, it would keep this presenter alive.
         SystemEvents.SessionSwitch -= OnSessionSwitch;
+        _viewModel.RefreshRequested -= OnRefreshRequested;
         Pause();
         _lifetime.Cancel();
         _lifetime.Dispose();

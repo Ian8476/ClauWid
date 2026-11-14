@@ -142,4 +142,4 @@ jobs:
             - Windows with the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) installed.
             - Claude Code signed in (`claude`, then `/login`): the widget reads its token from there to fetch your real usage.
 
-            **Usage:** unzip anywhere and run `ClaudeUsageWidget.exe`. Drag to move, drag an edge to resize, right-click for the menu.
+            **Usage:** unzip anywhere and run `ClaudeUsageWidget.exe`. It docks to the taskbar, next to the system tray: click the refresh button to read your usage again, right-click for the menu.

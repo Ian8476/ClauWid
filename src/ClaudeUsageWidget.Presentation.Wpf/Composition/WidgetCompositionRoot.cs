@@ -5,12 +5,10 @@ using ClaudeUsageWidget.Application.Formatting;
 using ClaudeUsageWidget.Domain;
 using ClaudeUsageWidget.Infrastructure.ClaudeCode;
 using ClaudeUsageWidget.Infrastructure.Time;
-using ClaudeUsageWidget.Presentation.Wpf.Displays;
-using ClaudeUsageWidget.Presentation.Wpf.Persistence;
 using ClaudeUsageWidget.Presentation.Wpf.Presenters;
+using ClaudeUsageWidget.Presentation.Wpf.Taskbar;
 using ClaudeUsageWidget.Presentation.Wpf.Tray;
 using ClaudeUsageWidget.Presentation.Wpf.ViewModels;
-using ClaudeUsageWidget.Presentation.Wpf.Windows;
 
 namespace ClaudeUsageWidget.Presentation.Wpf.Composition;
 
@@ -29,9 +27,14 @@ public sealed class WidgetCompositionRoot : IDisposable
 
     private ClaudeOAuthUsageProvider? _provider;
     private UsageWidgetPresenter? _presenter;
+    private TaskbarWidgetHost? _host;
     private WidgetTrayIcon? _trayIcon;
 
-    public MainWindow CreateMainWindow(Dispatcher dispatcher)
+    /// <summary>
+    /// Builds the widget, docks it to the taskbar and starts reading. <paramref name="exit"/>
+    /// is how the widget asks the app to shut down: no window's lifetime decides that.
+    /// </summary>
+    public void Start(Dispatcher dispatcher, Action exit)
     {
         IClock clock = new SystemClock();
 
@@ -59,18 +62,17 @@ public sealed class WidgetCompositionRoot : IDisposable
         _presenter = new UsageWidgetPresenter(
             viewModel, _provider, clock, FetchInterval, CountdownInterval, dispatcher);
 
-        var window = new MainWindow(
-            viewModel, new JsonWidgetPlacementStore(), new Win32DisplayLayoutProvider());
-        _trayIcon = new WidgetTrayIcon(window, viewModel);
+        _host = new TaskbarWidgetHost(viewModel, new Win32TaskbarLocator(), dispatcher, exit);
+        _trayIcon = new WidgetTrayIcon(_host, viewModel, dispatcher);
 
-        return window;
+        _host.Start();
+        _presenter.Start();
     }
-
-    public void StartRefreshing() => _presenter?.Start();
 
     public void Dispose()
     {
         _trayIcon?.Dispose();
+        _host?.Dispose();
         _presenter?.Dispose();
         _provider?.Dispose();
     }

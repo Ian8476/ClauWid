@@ -14,6 +14,8 @@ public partial class App : System.Windows.Application
     /// El arranque es sincrono a proposito. Con un "async void OnStartup" la ventana se
     /// crea despues de que WPF ya siguio adelante, y cualquier excepcion durante la
     /// construccion se pierde sin dejar rastro.
+    /// The app runs until told to stop (ShutdownMode in App.xaml): Windows destroys the
+    /// widget's window whenever Explorer restarts, and that must not end the app.
     /// </summary>
     protected override void OnStartup(StartupEventArgs args)
     {
@@ -27,10 +29,7 @@ public partial class App : System.Windows.Application
 
         DispatcherUnhandledException += OnDispatcherUnhandledException;
 
-        MainWindow = _compositionRoot.CreateMainWindow(Dispatcher);
-        MainWindow.Show();
-
-        _compositionRoot.StartRefreshing();
+        _compositionRoot.Start(Dispatcher, Shutdown);
     }
 
     protected override void OnExit(ExitEventArgs args)

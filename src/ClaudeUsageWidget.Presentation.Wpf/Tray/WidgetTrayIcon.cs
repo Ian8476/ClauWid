@@ -1,6 +1,6 @@
 using System.ComponentModel;
-using System.Windows;
 using System.Windows.Threading;
+using ClaudeUsageWidget.Presentation.Wpf.Taskbar;
 using ClaudeUsageWidget.Presentation.Wpf.ViewModels;
 using Drawing = System.Drawing;
 using Forms = System.Windows.Forms;
@@ -8,10 +8,9 @@ using Forms = System.Windows.Forms;
 namespace ClaudeUsageWidget.Presentation.Wpf.Tray;
 
 /// <summary>
-/// Icono en el area de notificacion. Como el widget no aparece en la barra de tareas, es
-/// la unica forma de encontrarlo cuando esta oculto y de salir sin tener que verlo.
-/// WPF no trae NotifyIcon propio, asi que se toma prestado de WinForms.
-/// Windows 11 coloca los iconos nuevos en el desplegable de iconos ocultos por defecto.
+/// Notification area icon: the way to bring the widget back when it is hidden, and to quit
+/// without having to see it. WPF has no NotifyIcon of its own, so the WinForms one is borrowed.
+/// Windows 11 puts new icons in the hidden icons flyout by default.
 /// </summary>
 public sealed class WidgetTrayIcon : IDisposable
 {
@@ -20,31 +19,35 @@ public sealed class WidgetTrayIcon : IDisposable
     private const string SevenDayCaption = "Semana";
     private const string ShowWidgetText = "Mostrar widget";
     private const string HideWidgetText = "Ocultar widget";
-    private const string TopmostText = "Siempre visible";
+    private const string RefreshText = "Actualizar ahora";
     private const string ExitText = "Salir";
 
     // Limite de NotifyIcon.Text: un texto mas largo lanza ArgumentOutOfRangeException.
     private const int MaxTooltipLength = 127;
 
-    // Named after this assembly instead of relying on "application", which means whichever
-    // exe hosts the code: under a test runner that is the runner, not the widget.
+    // Named after this assembly instead of relying on the application's own resources, which
+    // belong to whichever exe hosts the code: under a test runner that is the runner, not the
+    // widget. Relative on purpose: an absolute pack:// URI only parses once WPF has registered
+    // the scheme, and nothing guarantees that has happened by the time this field is set.
     private static readonly Uri IconUri = new(
-        $"pack://application:,,,/{typeof(WidgetTrayIcon).Assembly.GetName().Name};component/Assets/Icons/ClaudeUsageWidget.ico");
+        $"/{typeof(WidgetTrayIcon).Assembly.GetName().Name};component/Assets/Icons/ClaudeUsageWidget.ico",
+        UriKind.Relative);
 
-    private readonly Window _window;
+    private readonly IWidgetHost _host;
     private readonly WidgetViewModel _viewModel;
+    private readonly Dispatcher _dispatcher;
     private readonly Drawing.Icon _icon;
     private readonly Forms.ContextMenuStrip _menu;
     private readonly Forms.ToolStripMenuItem _toggleItem;
-    private readonly Forms.ToolStripMenuItem _topmostItem;
     private readonly Forms.NotifyIcon _notifyIcon;
 
     private DispatcherOperation? _pendingTooltipUpdate;
 
-    public WidgetTrayIcon(Window window, WidgetViewModel viewModel)
+    public WidgetTrayIcon(IWidgetHost host, WidgetViewModel viewModel, Dispatcher dispatcher)
     {
-        _window = window;
+        _host = host;
         _viewModel = viewModel;
+        _dispatcher = dispatcher;
 
         // El .ico trae varios tamanos; pedir el del sistema evita que Windows reescale el grande.
         using (var stream = System.Windows.Application.GetResourceStream(IconUri).Stream)
@@ -52,14 +55,13 @@ public sealed class WidgetTrayIcon : IDisposable
             _icon = new Drawing.Icon(stream, Forms.SystemInformation.SmallIconSize);
         }
 
-        _toggleItem = new Forms.ToolStripMenuItem(HideWidgetText, null, (_, _) => ToggleWindow());
-        _topmostItem = new Forms.ToolStripMenuItem(TopmostText, null, (_, _) => _window.Topmost = !_window.Topmost);
+        _toggleItem = new Forms.ToolStripMenuItem(HideWidgetText, null, (_, _) => ToggleWidget());
 
         _menu = new Forms.ContextMenuStrip();
         _menu.Items.Add(_toggleItem);
-        _menu.Items.Add(_topmostItem);
+        _menu.Items.Add(new Forms.ToolStripMenuItem(RefreshText, null, (_, _) => _viewModel.RequestRefresh()));
         _menu.Items.Add(new Forms.ToolStripSeparator());
-        _menu.Items.Add(new Forms.ToolStripMenuItem(ExitText, null, (_, _) => _window.Close()));
+        _menu.Items.Add(new Forms.ToolStripMenuItem(ExitText, null, (_, _) => _host.Exit()));
         _menu.Opening += OnMenuOpening;
 
         _notifyIcon = new Forms.NotifyIcon
@@ -94,27 +96,23 @@ public sealed class WidgetTrayIcon : IDisposable
     {
         if (args.Button is Forms.MouseButtons.Left)
         {
-            ToggleWindow();
+            ToggleWidget();
         }
     }
 
-    /// <summary>El menu refleja el estado real de la ventana, que tambien cambia desde su propio menu.</summary>
-    private void OnMenuOpening(object? sender, CancelEventArgs args)
-    {
-        _toggleItem.Text = _window.IsVisible ? HideWidgetText : ShowWidgetText;
-        _topmostItem.Checked = _window.Topmost;
-    }
+    /// <summary>The menu shows the widget's actual state, which its own menu changes too.</summary>
+    private void OnMenuOpening(object? sender, CancelEventArgs args) =>
+        _toggleItem.Text = _host.IsVisible ? HideWidgetText : ShowWidgetText;
 
-    private void ToggleWindow()
+    private void ToggleWidget()
     {
-        if (_window.IsVisible)
+        if (_host.IsVisible)
         {
-            _window.Hide();
+            _host.Hide();
             return;
         }
 
-        _window.Show();
-        _window.Activate();
+        _host.Show();
     }
 
     /// <summary>
@@ -131,10 +129,10 @@ public sealed class WidgetTrayIcon : IDisposable
             return;
         }
 
-        _pendingTooltipUpdate ??= _window.Dispatcher.InvokeAsync(UpdateTooltip, DispatcherPriority.Background);
+        _pendingTooltipUpdate ??= _dispatcher.InvokeAsync(UpdateTooltip, DispatcherPriority.Background);
     }
 
-    /// <summary>Pasar el raton por el icono da el consumo sin tener que abrir el widget.</summary>
+    /// <summary>Hovering the icon gives the usage as text, also while the widget is hidden.</summary>
     private void UpdateTooltip()
     {
         _pendingTooltipUpdate = null;
