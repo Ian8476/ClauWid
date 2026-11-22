@@ -54,7 +54,7 @@ public sealed class ClaudeOAuthUsageProviderTests : IDisposable
     {
         _server.Respond(HttpStatusCode.OK, UsageJson);
 
-        var snapshot = await _provider.GetLatestAsync(CancellationToken.None);
+        var snapshot = (await _provider.GetLatestAsync(CancellationToken.None)).Snapshot;
 
         Assert.Equal(42.4, snapshot?.FiveHour?.Used.Value);
         Assert.Equal(81.6, snapshot?.SevenDay?.Used.Value);
@@ -67,7 +67,7 @@ public sealed class ClaudeOAuthUsageProviderTests : IDisposable
     {
         _server.Respond(HttpStatusCode.TooManyRequests, RateLimitJson, "Retry-After: 120");
 
-        Assert.Null(await _provider.GetLatestAsync(CancellationToken.None));
+        Assert.Null((await _provider.GetLatestAsync(CancellationToken.None)).Snapshot);
         Assert.Equal(1, _server.RequestCount);
 
         await AssertHoldsOffFor(TimeSpan.FromSeconds(120));
@@ -95,16 +95,61 @@ public sealed class ClaudeOAuthUsageProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task Retry_after_zero_does_not_hold_the_next_read()
+    public async Task Retry_after_zero_still_holds_the_next_read_for_the_floor()
     {
         _server.Respond(HttpStatusCode.TooManyRequests, RateLimitJson, "Retry-After: 0");
-        _server.Respond(HttpStatusCode.OK, UsageJson);
 
         await _provider.GetLatestAsync(CancellationToken.None);
-        var snapshot = await _provider.GetLatestAsync(CancellationToken.None);
 
-        Assert.NotNull(snapshot);
-        Assert.Equal(2, _server.RequestCount);
+        await AssertHoldsOffFor(new ClaudeOAuthUsageOptions().RateLimitFloor);
+    }
+
+    [Fact]
+    public async Task A_rate_limited_read_says_when_to_try_again()
+    {
+        _server.Respond(HttpStatusCode.TooManyRequests, RateLimitJson, "Retry-After: 120");
+        var limitedAt = _clock.Now;
+
+        var result = await _provider.GetLatestAsync(CancellationToken.None);
+
+        Assert.Null(result.Snapshot);
+        Assert.Equal(limitedAt + TimeSpan.FromSeconds(120), result.NotBefore);
+    }
+
+    [Fact]
+    public async Task Retry_after_zero_says_to_try_again_after_the_floor()
+    {
+        _server.Respond(HttpStatusCode.TooManyRequests, RateLimitJson, "Retry-After: 0");
+        var limitedAt = _clock.Now;
+
+        var result = await _provider.GetLatestAsync(CancellationToken.None);
+
+        Assert.Equal(limitedAt + new ClaudeOAuthUsageOptions().RateLimitFloor, result.NotBefore);
+    }
+
+    [Fact]
+    public async Task A_read_during_the_backoff_sends_nothing_and_returns_the_time_to_try_again()
+    {
+        _server.Respond(HttpStatusCode.TooManyRequests, RateLimitJson, "Retry-After: 0");
+        var first = await _provider.GetLatestAsync(CancellationToken.None);
+
+        _clock.Now += TimeSpan.FromSeconds(10);
+        var during = await _provider.GetLatestAsync(CancellationToken.None);
+
+        Assert.Equal(1, _server.RequestCount);
+        Assert.Null(during.Snapshot);
+        Assert.Equal(first.NotBefore, during.NotBefore);
+    }
+
+    [Fact]
+    public async Task A_successful_read_asks_for_no_wait()
+    {
+        _server.Respond(HttpStatusCode.OK, UsageJson);
+
+        var result = await _provider.GetLatestAsync(CancellationToken.None);
+
+        Assert.NotNull(result.Snapshot);
+        Assert.Null(result.NotBefore);
     }
 
     [Fact]
@@ -114,9 +159,9 @@ public sealed class ClaudeOAuthUsageProviderTests : IDisposable
         _server.Respond(HttpStatusCode.InternalServerError, "{}");
         _server.Respond(HttpStatusCode.OK, UsageJson);
 
-        Assert.Null(await _provider.GetLatestAsync(CancellationToken.None));
+        Assert.Null((await _provider.GetLatestAsync(CancellationToken.None)).Snapshot);
         await Assert.ThrowsAsync<HttpRequestException>(() => _provider.GetLatestAsync(CancellationToken.None));
-        Assert.NotNull(await _provider.GetLatestAsync(CancellationToken.None));
+        Assert.NotNull((await _provider.GetLatestAsync(CancellationToken.None)).Snapshot);
 
         Assert.Equal(3, _server.RequestCount);
     }
@@ -130,12 +175,12 @@ public sealed class ClaudeOAuthUsageProviderTests : IDisposable
         var requestsSoFar = _server.RequestCount;
 
         _clock.Now += backoff - TimeSpan.FromSeconds(1);
-        Assert.Null(await _provider.GetLatestAsync(CancellationToken.None));
+        Assert.Null((await _provider.GetLatestAsync(CancellationToken.None)).Snapshot);
         Assert.Equal(requestsSoFar, _server.RequestCount);
 
         _clock.Now += TimeSpan.FromSeconds(2);
         _server.Respond(HttpStatusCode.OK, UsageJson);
-        Assert.NotNull(await _provider.GetLatestAsync(CancellationToken.None));
+        Assert.NotNull((await _provider.GetLatestAsync(CancellationToken.None)).Snapshot);
         Assert.Equal(requestsSoFar + 1, _server.RequestCount);
     }
 }
