@@ -1,9 +1,6 @@
 using System.Windows;
-using System.Windows.Interop;
-using System.Windows.Media;
 using System.Windows.Threading;
 using ClaudeUsageWidget.Presentation.Wpf.Taskbar;
-using ClaudeUsageWidget.Presentation.Wpf.Windows;
 using ClaudeUsageWidget.Tests.Support;
 
 namespace ClaudeUsageWidget.Tests.Presentation;
@@ -12,11 +9,11 @@ public sealed class TaskbarWidgetHostTests
 {
     private static readonly TimeSpan Settle = TimeSpan.FromMilliseconds(200);
 
-    // Past the host's once-a-second look for a taskbar that is not there yet.
-    private static readonly TimeSpan TaskbarRetry = TimeSpan.FromMilliseconds(1500);
+    // Past the host's look at the taskbar every two seconds.
+    private static readonly TimeSpan PeriodicLook = TimeSpan.FromMilliseconds(2500);
 
     [Fact]
-    public void Docks_before_the_notification_area_owned_by_the_taskbar() => Sta.Run(() =>
+    public void Docks_before_the_occupied_area_as_a_child_of_the_taskbar() => Sta.Run(() =>
     {
         using var taskbar = new FakeTaskbar();
         var locator = new FakeTaskbarLocator { Taskbar = taskbar.Geometry };
@@ -25,10 +22,32 @@ public sealed class TaskbarWidgetHostTests
         host.Start();
         Sta.Pump(Settle);
 
-        var window = Assert.Single(WidgetWindows());
-        Assert.True(window.IsVisible);
-        Assert.Equal(taskbar.Handle, new WindowInteropHelper(window).Owner);
+        var window = Assert.Single(NativeWindows.WidgetWindows());
+        Assert.True(NativeWindows.IsShown(window));
+        Assert.Equal(taskbar.Handle, NativeWindows.ParentOf(window));
         AssertFillsTheSlotBefore(taskbar.Geometry, window);
+    });
+
+    [Fact]
+    public void Docks_before_the_other_widgets_that_the_occupied_area_includes() => Sta.Run(() =>
+    {
+        using var taskbar = new FakeTaskbar();
+        var locator = new FakeTaskbarLocator { Taskbar = taskbar.Geometry };
+        using var host = NewHost(locator);
+        host.Start();
+        Sta.Pump(Settle);
+
+        // Another app docks a 120 px widget against the notification area.
+        var tray = taskbar.Geometry.OccupiedBounds;
+        var withWidget = taskbar.Geometry with
+        {
+            OccupiedBounds = new Int32Rect(tray.X - 120, tray.Y, tray.Width + 120, tray.Height)
+        };
+        locator.Taskbar = withWidget;
+        locator.RaiseChanged();
+        Sta.Pump(Settle);
+
+        AssertFillsTheSlotBefore(withWidget, Assert.Single(NativeWindows.WidgetWindows()));
     });
 
     [Fact]
@@ -45,7 +64,24 @@ public sealed class TaskbarWidgetHostTests
         locator.RaiseChanged();
         Sta.Pump(Settle);
 
-        AssertFillsTheSlotBefore(grown, Assert.Single(WidgetWindows()));
+        AssertFillsTheSlotBefore(grown, Assert.Single(NativeWindows.WidgetWindows()));
+        Assert.Equal(1, locator.ActiveWatches);
+    });
+
+    [Fact]
+    public void Notices_a_change_nobody_reports_on_its_next_periodic_look() => Sta.Run(() =>
+    {
+        using var taskbar = new FakeTaskbar();
+        var locator = new FakeTaskbarLocator { Taskbar = taskbar.Geometry };
+        using var host = NewHost(locator);
+        host.Start();
+        Sta.Pump(Settle);
+
+        var grown = taskbar.GeometryWithTrayOf(520);
+        locator.Taskbar = grown;
+        Sta.Pump(PeriodicLook);
+
+        AssertFillsTheSlotBefore(grown, Assert.Single(NativeWindows.WidgetWindows()));
         Assert.Equal(1, locator.ActiveWatches);
     });
 
@@ -57,24 +93,43 @@ public sealed class TaskbarWidgetHostTests
         using var host = NewHost(locator);
         host.Start();
         Sta.Pump(Settle);
-        var firstWindow = Assert.Single(WidgetWindows());
+        var firstWindow = Assert.Single(NativeWindows.WidgetWindows());
 
         // Explorer goes down: its taskbar is destroyed and there is none for a while.
         locator.Taskbar = null;
         first.Dispose();
         Sta.Pump(Settle);
 
-        Assert.Empty(WidgetWindows());
+        Assert.Empty(NativeWindows.WidgetWindows());
         Assert.Equal(0, locator.ActiveWatches);
 
         using var second = new FakeTaskbar();
         locator.Taskbar = second.Geometry;
-        Sta.Pump(TaskbarRetry);
+        Sta.Pump(PeriodicLook);
 
-        var secondWindow = Assert.Single(WidgetWindows());
-        Assert.NotSame(firstWindow, secondWindow);
-        Assert.True(secondWindow.IsVisible);
-        Assert.Equal(second.Handle, new WindowInteropHelper(secondWindow).Owner);
+        var secondWindow = Assert.Single(NativeWindows.WidgetWindows());
+        Assert.NotEqual(firstWindow, secondWindow);
+        Assert.True(NativeWindows.IsShown(secondWindow));
+        Assert.Equal(second.Handle, NativeWindows.ParentOf(secondWindow));
+    });
+
+    [Fact]
+    public void Docks_a_new_window_when_the_taskbar_changes_without_the_old_one_being_destroyed() => Sta.Run(() =>
+    {
+        using var first = new FakeTaskbar();
+        using var second = new FakeTaskbar();
+        var locator = new FakeTaskbarLocator { Taskbar = first.Geometry };
+        using var host = NewHost(locator);
+        host.Start();
+        Sta.Pump(Settle);
+
+        locator.Taskbar = second.Geometry;
+        locator.RaiseChanged();
+        Sta.Pump(Settle);
+
+        var window = Assert.Single(NativeWindows.WidgetWindows());
+        Assert.Equal(second.Handle, NativeWindows.ParentOf(window));
+        Assert.Equal(1, locator.ActiveWatches);
     });
 
     [Fact]
@@ -85,23 +140,23 @@ public sealed class TaskbarWidgetHostTests
         using var host = NewHost(locator);
         host.Start();
         Sta.Pump(Settle);
-        var window = Assert.Single(WidgetWindows());
+        var window = Assert.Single(NativeWindows.WidgetWindows());
 
         host.Hide();
         locator.RaiseChanged();
         Sta.Pump(Settle);
 
         Assert.False(host.IsVisible);
-        Assert.False(window.IsVisible);
+        Assert.False(NativeWindows.IsShown(window));
 
         host.Show();
 
         Assert.True(host.IsVisible);
-        Assert.True(window.IsVisible);
+        Assert.True(NativeWindows.IsShown(window));
     });
 
     [Fact]
-    public void Closes_its_window_and_stops_watching_on_dispose() => Sta.Run(() =>
+    public void Destroys_its_window_and_stops_watching_on_dispose() => Sta.Run(() =>
     {
         using var taskbar = new FakeTaskbar();
         var locator = new FakeTaskbarLocator { Taskbar = taskbar.Geometry };
@@ -112,27 +167,20 @@ public sealed class TaskbarWidgetHostTests
         host.Dispose();
         Sta.Pump(Settle);
 
-        Assert.Empty(WidgetWindows());
+        Assert.Empty(NativeWindows.WidgetWindows());
         Assert.Equal(0, locator.ActiveWatches);
     });
 
     private static TaskbarWidgetHost NewHost(FakeTaskbarLocator locator) =>
         new(TestData.NewViewModel(), locator, Dispatcher.CurrentDispatcher, static () => { });
 
-    /// <summary>The widget windows alive on this thread. A closed window drops out of this list.</summary>
-    private static List<TaskbarWindow> WidgetWindows() =>
-        PresentationSource.CurrentSources
-            .OfType<HwndSource>()
-            .Select(source => source.RootVisual)
-            .OfType<TaskbarWindow>()
-            .ToList();
-
-    private static void AssertFillsTheSlotBefore(TaskbarGeometry taskbar, TaskbarWindow window)
+    /// <summary>The widget ends right where the occupied area starts and fills the taskbar's thickness.</summary>
+    private static void AssertFillsTheSlotBefore(TaskbarGeometry taskbar, IntPtr window)
     {
-        var dpiScale = VisualTreeHelper.GetDpi(window).DpiScaleX;
+        var bounds = NativeWindows.ScreenBounds(window);
 
-        Assert.Equal(taskbar.TrayBounds.X, (window.Left + window.Width) * dpiScale, precision: 3);
-        Assert.Equal(taskbar.Bounds.Y, window.Top * dpiScale, precision: 3);
-        Assert.Equal(taskbar.Bounds.Height, window.Height * dpiScale, precision: 3);
+        Assert.Equal(taskbar.OccupiedBounds.X, bounds.X + bounds.Width);
+        Assert.Equal(taskbar.Bounds.Y, bounds.Y);
+        Assert.Equal(taskbar.Bounds.Height, bounds.Height);
     }
 }

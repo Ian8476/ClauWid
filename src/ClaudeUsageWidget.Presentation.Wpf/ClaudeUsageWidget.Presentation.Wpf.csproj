@@ -8,6 +8,14 @@
     <AssemblyName>ClaudeUsageWidget</AssemblyName>
     <RootNamespace>ClaudeUsageWidget.Presentation.Wpf</RootNamespace>
     <ApplicationIcon>Assets\Icons\ClaudeUsageWidget.ico</ApplicationIcon>
+    <!-- Windows 10 compatibility and per-monitor DPI: see the comments in the manifest. -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!--
+      WFAC010 is the WinForms analyzer asking to configure DPI through ApplicationHighDpiMode
+      instead of the manifest. WinForms is only here for NotifyIcon, and the manifest is the
+      only place that gives the whole process, WPF included, its awareness before any window exists.
+    -->
+    <NoWarn>$(NoWarn);WFAC010</NoWarn>
     <!-- Apagado solo aqui: el codigo generado por XAML no esta bajo nuestro control. -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <!--
