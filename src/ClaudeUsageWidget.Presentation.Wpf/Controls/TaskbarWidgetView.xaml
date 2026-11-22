@@ -1,25 +1,17 @@
-<Window x:Class="ClaudeUsageWidget.Presentation.Wpf.Windows.TaskbarWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:controls="clr-namespace:ClaudeUsageWidget.Presentation.Wpf.Controls"
-        xmlns:converters="clr-namespace:ClaudeUsageWidget.Presentation.Wpf.Converters"
-        Title="Claude usage"
-        WindowStyle="None"
-        AllowsTransparency="True"
-        Background="Transparent"
-        ResizeMode="NoResize"
-        ShowInTaskbar="False"
-        ShowActivated="False"
-        WindowStartupLocation="Manual"
-        ContextMenuOpening="OnContextMenuOpening"
-        TextOptions.TextFormattingMode="Display"
-        TextOptions.TextRenderingMode="Grayscale"
-        UseLayoutRounding="True">
+<UserControl x:Class="ClaudeUsageWidget.Presentation.Wpf.Controls.TaskbarWidgetView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:ClaudeUsageWidget.Presentation.Wpf.Controls"
+             xmlns:converters="clr-namespace:ClaudeUsageWidget.Presentation.Wpf.Converters"
+             MouseRightButtonUp="OnMouseRightButtonUp"
+             TextOptions.TextFormattingMode="Display"
+             TextOptions.TextRenderingMode="Grayscale"
+             UseLayoutRounding="True">
 
-    <Window.Resources>
+    <UserControl.Resources>
         <ResourceDictionary>
             <!--
-                The tokens are merged here instead of in App.xaml so the window carries
+                The tokens are merged here instead of in App.xaml so the view carries
                 everything it needs. The code-behind adds TaskbarDark or TaskbarLight next to
                 them and swaps it when the Windows mode changes, which is why the neutrals
                 below are DynamicResource.
@@ -34,17 +26,7 @@
                                                     HighBrush="{StaticResource HighUsageBrush}"
                                                     CriticalBrush="{StaticResource CriticalUsageBrush}" />
         </ResourceDictionary>
-    </Window.Resources>
-
-    <Window.ContextMenu>
-        <ContextMenu>
-            <MenuItem Header="Actualizar ahora" Click="OnRefreshRequested" />
-            <Separator />
-            <!-- Hides to the notification area; the icon there brings it back. -->
-            <MenuItem Header="Ocultar" Click="OnHideRequested" />
-            <MenuItem Header="Salir" Click="OnExitRequested" />
-        </ContextMenu>
-    </Window.ContextMenu>
+    </UserControl.Resources>
 
     <Border x:Name="Slot"
             Width="{StaticResource TaskbarSlotWidth}"
@@ -168,4 +150,4 @@
             </Button>
         </Grid>
     </Border>
-</Window>
+</UserControl>

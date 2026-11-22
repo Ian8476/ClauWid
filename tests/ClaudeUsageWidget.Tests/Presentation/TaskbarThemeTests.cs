@@ -1,5 +1,5 @@
 using System.Windows;
-using ClaudeUsageWidget.Presentation.Wpf.Windows;
+using ClaudeUsageWidget.Presentation.Wpf.Controls;
 using ClaudeUsageWidget.Tests.Support;
 
 namespace ClaudeUsageWidget.Tests.Presentation;
@@ -7,7 +7,7 @@ namespace ClaudeUsageWidget.Tests.Presentation;
 public sealed class TaskbarThemeTests
 {
     /// <summary>
-    /// The window swaps one dictionary for the other when the Windows mode changes. A key
+    /// The view swaps one dictionary for the other when the Windows mode changes. A key
     /// present in only one of them would leave something unpainted in the other mode.
     /// </summary>
     [Fact]
@@ -22,7 +22,7 @@ public sealed class TaskbarThemeTests
 
     private static List<string> KeysOf(string theme)
     {
-        var assembly = typeof(TaskbarWindow).Assembly.GetName().Name;
+        var assembly = typeof(TaskbarWidgetView).Assembly.GetName().Name;
         var dictionary = new ResourceDictionary
         {
             Source = new Uri($"/{assembly};component/Theme/{theme}.xaml", UriKind.Relative)

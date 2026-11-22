@@ -16,9 +16,12 @@ No tabs to open, no commands to remember — the number that matters, always in 
   reset time.
 - **Color by usage**, the same on both bars: blue below 50%, yellow below 70%, orange
   below 85% and red from there on.
-- **Part of the taskbar**: it sits right before the system tray, follows the tray when it
-  grows or shrinks, matches the taskbar's dark or light mode, and steps aside with the
+- **Part of the taskbar**: it is a child window of the taskbar itself, so it moves, hides
+  and stacks with the taskbar. It sits right before the system tray, follows the tray when
+  it grows or shrinks, matches the taskbar's dark or light mode, and steps aside with the
   taskbar when an app goes full screen. There is no window to place or resize.
+- **Good neighbor**: when another app has already docked its own widget against the
+  system tray, it docks next to that widget instead of covering it.
 - **Refresh button**: asks for your usage again right now instead of waiting for the next
   automatic reading.
 
