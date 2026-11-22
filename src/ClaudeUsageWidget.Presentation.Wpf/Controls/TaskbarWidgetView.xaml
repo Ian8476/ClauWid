@@ -47,7 +47,13 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <StackPanel VerticalAlignment="Center">
+            <!--
+                Hovering the bars says when the numbers were read. The transparent background
+                makes the gaps between the labels and the bars answer to the mouse as well.
+            -->
+            <StackPanel VerticalAlignment="Center"
+                        Background="Transparent"
+                        ToolTip="{Binding UpdatedLabel}">
 
                 <controls:UsageBar Fraction="{Binding FiveHour.Fraction}"
                                    ResetLabel="{Binding FiveHour.ResetLabel}"
@@ -86,7 +92,7 @@
                     Margin="{StaticResource RefreshButtonMargin}"
                     VerticalAlignment="Center"
                     Focusable="False"
-                    ToolTip="Actualizar ahora"
+                    ToolTip="{Binding RefreshToolTip}"
                     Click="OnRefreshRequested">
                 <Button.Template>
                     <ControlTemplate TargetType="Button">
@@ -120,7 +126,7 @@
                                 lands, the turn in progress is completed instead of cut: 360
                                 degrees looks like 0, so the next refresh starts clean.
                             -->
-                            <DataTrigger Binding="{Binding IsRefreshing}" Value="True">
+                            <DataTrigger Binding="{Binding RefreshState}" Value="Refreshing">
                                 <DataTrigger.EnterActions>
                                     <BeginStoryboard>
                                         <Storyboard>
@@ -139,6 +145,37 @@
                                             <DoubleAnimation Storyboard.TargetName="Glyph"
                                                              Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
                                                              To="360"
+                                                             Duration="{StaticResource RefreshSettleDuration}" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.ExitActions>
+                            </DataTrigger>
+
+                            <!--
+                                The click was registered but the source cannot be read yet: the
+                                icon dims and slowly pulses until the read it is queued behind
+                                runs, and comes back to full strength when that read starts.
+                            -->
+                            <DataTrigger Binding="{Binding RefreshState}" Value="Waiting">
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Glyph"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             From="{StaticResource RefreshWaitingOpacity}"
+                                                             To="{StaticResource RefreshWaitingPulseOpacity}"
+                                                             Duration="{StaticResource RefreshWaitingPulseDuration}"
+                                                             AutoReverse="True"
+                                                             RepeatBehavior="Forever" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                                <DataTrigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Glyph"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="1"
                                                              Duration="{StaticResource RefreshSettleDuration}" />
                                         </Storyboard>
                                     </BeginStoryboard>

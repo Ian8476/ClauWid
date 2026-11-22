@@ -25,7 +25,7 @@ public sealed class SimulatedUsageProvider : IUsageSnapshotProvider
         _options = options;
     }
 
-    public Task<UsageSnapshot?> GetLatestAsync(CancellationToken cancellationToken)
+    public Task<UsageReadResult> GetLatestAsync(CancellationToken cancellationToken)
     {
         var now = _clock.Now;
 
@@ -51,7 +51,7 @@ public sealed class SimulatedUsageProvider : IUsageSnapshotProvider
             }
         };
 
-        return Task.FromResult<UsageSnapshot?>(snapshot);
+        return Task.FromResult(UsageReadResult.Of(snapshot));
     }
 
     private void EnsureInitialized(DateTimeOffset now)

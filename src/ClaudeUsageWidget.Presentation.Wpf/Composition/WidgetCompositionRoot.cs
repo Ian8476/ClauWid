@@ -20,10 +20,16 @@ namespace ClaudeUsageWidget.Presentation.Wpf.Composition;
 /// </summary>
 public sealed class WidgetCompositionRoot : IDisposable
 {
-    // Each read is an authenticated network call. Polling faster than this adds no visible
-    // precision and invites 429s, which the provider answers by backing off.
-    private static readonly TimeSpan FetchInterval = TimeSpan.FromMinutes(1);
-    private static readonly TimeSpan CountdownInterval = TimeSpan.FromSeconds(30);
+    // Each read is an authenticated network call, and the API rejects reads less than about
+    // 105 s apart (measured 2026-11-22). Polling every three minutes stays inside that and
+    // leaves a window in which the refresh button reads right away; earlier clicks are held
+    // back to the spacing instead of being sent to be rejected. Usage in a 5-hour window moves
+    // slowly, so three minutes is still fresh.
+    private static readonly UsagePollingOptions PollingOptions = new()
+    {
+        PollInterval = TimeSpan.FromMinutes(3),
+        MinimumReadSpacing = TimeSpan.FromSeconds(105)
+    };
 
     private ClaudeOAuthUsageProvider? _provider;
     private UsageWidgetPresenter? _presenter;
@@ -60,7 +66,7 @@ public sealed class WidgetCompositionRoot : IDisposable
         var viewModel = new WidgetViewModel(fiveHour, sevenDay);
 
         _presenter = new UsageWidgetPresenter(
-            viewModel, _provider, clock, FetchInterval, CountdownInterval, dispatcher);
+            viewModel, _provider, clock, PollingOptions, dispatcher);
 
         _host = new TaskbarWidgetHost(viewModel, new Win32TaskbarLocator(), dispatcher, exit);
         _trayIcon = new WidgetTrayIcon(_host, viewModel, dispatcher);

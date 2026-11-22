@@ -63,4 +63,12 @@
     <Duration x:Key="RefreshSpinDuration">0:0:0.6</Duration>
     <Duration x:Key="RefreshSettleDuration">0:0:0.2</Duration>
 
+    <!--
+        While a refresh is queued behind the source's rate limit the icon is dimmed and pulses
+        slowly between these two strengths, so the click visibly registered.
+    -->
+    <sys:Double x:Key="RefreshWaitingOpacity">0.45</sys:Double>
+    <sys:Double x:Key="RefreshWaitingPulseOpacity">0.2</sys:Double>
+    <Duration x:Key="RefreshWaitingPulseDuration">0:0:1.2</Duration>
+
 </ResourceDictionary>

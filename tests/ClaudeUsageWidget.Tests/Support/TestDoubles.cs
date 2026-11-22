@@ -12,15 +12,34 @@ internal sealed class FakeClock : IClock
     public DateTimeOffset Now { get; set; } = new(2026, 9, 18, 12, 0, 0, TimeSpan.Zero);
 }
 
-/// <summary>Counts reads. Returns no data, which the widget handles as "keep the last reading".</summary>
+/// <summary>
+/// Counts reads and when each one started, by the real clock. By default it returns no data,
+/// which the widget handles as "keep the last reading"; <see cref="Respond"/> says otherwise,
+/// and a <see cref="Gate"/> keeps every read in flight until it completes.
+/// </summary>
 internal sealed class CountingUsageProvider : IUsageSnapshotProvider
 {
     public int Calls { get; private set; }
 
-    public Task<UsageSnapshot?> GetLatestAsync(CancellationToken cancellationToken)
+    public List<DateTimeOffset> CallTimes { get; } = [];
+
+    /// <summary>Called once per read, with the number of the read (1 for the first).</summary>
+    public Func<int, UsageReadResult> Respond { get; set; } = static _ => UsageReadResult.NoData;
+
+    public Task? Gate { get; set; }
+
+    public async Task<UsageReadResult> GetLatestAsync(CancellationToken cancellationToken)
     {
         Calls++;
-        return Task.FromResult<UsageSnapshot?>(null);
+        CallTimes.Add(DateTimeOffset.UtcNow);
+        var number = Calls;
+
+        if (Gate is { } gate)
+        {
+            await gate;
+        }
+
+        return Respond(number);
     }
 }
 

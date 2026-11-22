@@ -23,7 +23,10 @@ No tabs to open, no commands to remember — the number that matters, always in 
 - **Good neighbor**: when another app has already docked its own widget against the
   system tray, it docks next to that widget instead of covering it.
 - **Refresh button**: asks for your usage again right now instead of waiting for the next
-  automatic reading.
+  automatic reading. The API only accepts a read every minute and a half or so, so a click
+  too soon after the last read waits and runs as soon as it is allowed (the button dims
+  while it waits).
+  Hover the bars to see when the numbers were last updated.
 
 ## Download and run
 
@@ -65,9 +68,12 @@ at once — while the source is down, the widget keeps the last known reading.
 
 The widget reads the OAuth token that Claude Code stores in
 `%USERPROFILE%\.claude\.credentials.json` (or in `CLAUDE_CONFIG_DIR`, if you have it
-set) and queries `https://api.anthropic.com/api/oauth/usage` every minute, and whenever you
-press the refresh button. If the API answers that it is being asked too often, the widget
-stops asking for as long as it is told to, button included, and keeps the last reading.
+set) and queries `https://api.anthropic.com/api/oauth/usage` every 3 minutes, and whenever
+you press the refresh button. The API rejects reads that come less than about 105 seconds
+apart, so a click that comes too soon after the last read is not sent to be rejected: the
+button dims and pulses while it waits, and the read runs as soon as it is allowed. If the
+API answers that it is being asked too often, the widget stops asking for as long as it is
+told to (105 seconds at least), keeps the last reading, and retries by itself.
 
 - **It never refreshes the token on its own:** doing so would rotate the refresh token
   and sign Claude Code out. When it finds the token expired, which is common if you only

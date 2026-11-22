@@ -27,6 +27,7 @@ public sealed class ClaudeOAuthUsageProvider : IUsageSnapshotProvider, IDisposab
     private readonly ClaudeCliSessionRefresher _sessionRefresher;
     private readonly IClock _clock;
     private readonly TimeSpan _rateLimitBackoff;
+    private readonly TimeSpan _rateLimitFloor;
     private readonly HttpClient _httpClient;
 
     private DateTimeOffset _rateLimitedUntil = DateTimeOffset.MinValue;
@@ -41,6 +42,7 @@ public sealed class ClaudeOAuthUsageProvider : IUsageSnapshotProvider, IDisposab
         _sessionRefresher = sessionRefresher;
         _clock = clock;
         _rateLimitBackoff = options.RateLimitBackoff;
+        _rateLimitFloor = options.RateLimitFloor;
         _httpClient = new HttpClient
         {
             BaseAddress = options.BaseAddress,
@@ -50,17 +52,18 @@ public sealed class ClaudeOAuthUsageProvider : IUsageSnapshotProvider, IDisposab
             new ProductInfoHeaderValue(UserAgentProduct, UserAgentVersion));
     }
 
-    public async Task<UsageSnapshot?> GetLatestAsync(CancellationToken cancellationToken)
+    public async Task<UsageReadResult> GetLatestAsync(CancellationToken cancellationToken)
     {
-        // Asking again while rate limited only prolongs it. The widget keeps the last reading.
+        // Asking again while rate limited only prolongs it. Nothing is sent, and the caller is
+        // told when the next read is worth trying. The widget keeps the last reading meanwhile.
         if (_clock.Now < _rateLimitedUntil)
         {
-            return null;
+            return UsageReadResult.WaitUntil(_rateLimitedUntil);
         }
 
         if (await ReadAccessTokenAsync(cancellationToken) is not { } accessToken)
         {
-            return null;
+            return UsageReadResult.NoData;
         }
 
         using var request = new HttpRequestMessage(HttpMethod.Get, UsagePath);
@@ -71,16 +74,23 @@ public sealed class ClaudeOAuthUsageProvider : IUsageSnapshotProvider, IDisposab
 
         if (response.StatusCode is HttpStatusCode.TooManyRequests)
         {
-            _rateLimitedUntil = RetryAt(response.Headers.RetryAfter, _clock.Now);
+            var now = _clock.Now;
+
+            // The API says "Retry-After: 0" and keeps rejecting for well over a minute, so what it
+            // asks for counts only when it is longer than the floor.
+            var retryAt = RetryAt(response.Headers.RetryAfter, now);
+            var floor = now + _rateLimitFloor;
+            _rateLimitedUntil = retryAt > floor ? retryAt : floor;
+
             Debug.WriteLine($"Claude usage: rate limited (429), next try at {_rateLimitedUntil:T}.");
-            return null;
+            return UsageReadResult.WaitUntil(_rateLimitedUntil);
         }
 
         if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
         {
             // Token revocado, o emitido sin el scope user:profile (p. ej. "claude setup-token").
             Debug.WriteLine($"Claude usage: el endpoint rechazo el token ({(int)response.StatusCode}).");
-            return null;
+            return UsageReadResult.NoData;
         }
 
         response.EnsureSuccessStatusCode();
@@ -95,7 +105,7 @@ public sealed class ClaudeOAuthUsageProvider : IUsageSnapshotProvider, IDisposab
             SevenDay = ToWindow(UsageWindowKind.SevenDay, usage?.SevenDay)
         };
 
-        return snapshot.IsEmpty ? null : snapshot;
+        return UsageReadResult.Of(snapshot.IsEmpty ? null : snapshot);
     }
 
     public void Dispose() => _httpClient.Dispose();

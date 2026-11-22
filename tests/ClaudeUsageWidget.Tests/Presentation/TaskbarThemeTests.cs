@@ -22,6 +22,11 @@ public sealed class TaskbarThemeTests
 
     private static List<string> KeysOf(string theme)
     {
+        // A relative resource URI only resolves once WPF has registered the pack:// scheme, which
+        // the Application type does when it is first touched. In the widget that is on startup; here
+        // nothing may have touched it yet, which depends on which test the runner started with.
+        _ = System.Windows.Application.Current;
+
         var assembly = typeof(TaskbarWidgetView).Assembly.GetName().Name;
         var dictionary = new ResourceDictionary
         {
