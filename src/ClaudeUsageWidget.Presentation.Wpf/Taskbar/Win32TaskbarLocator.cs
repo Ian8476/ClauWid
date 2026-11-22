@@ -6,15 +6,20 @@ namespace ClaudeUsageWidget.Presentation.Wpf.Taskbar;
 /// <summary>
 /// Finds the primary taskbar by its window class. On Windows 11 the taskbar is drawn by a single
 /// XAML surface, but the classic notification area window is still there and still sized to
-/// match what is drawn, so its rectangle says where the free space ends.
+/// match what is drawn, so its rectangle says where the free space ends. Widgets that other
+/// apps dock against it, as child windows of the taskbar, push that edge further in.
 /// </summary>
 public sealed class Win32TaskbarLocator : ITaskbarLocator
 {
     private const string TaskbarClass = "Shell_TrayWnd";
     private const string TrayClass = "TrayNotifyWnd";
 
-    // EVENT_OBJECT_REORDER: a window changed the stacking order of its children. For top-level
-    // windows such as the taskbar, the window reporting it is the desktop.
+    // GW_CHILD: the topmost child of a window. GW_HWNDNEXT: the sibling right below a window.
+    private const uint FirstChild = 5;
+    private const uint NextSibling = 2;
+
+    // EVENT_OBJECT_REORDER: a window changed the stacking order of its children. The window
+    // reporting it is the parent whose children moved.
     private const uint ReorderEvent = 0x8004;
 
     // EVENT_OBJECT_LOCATIONCHANGE: a window moved or resized.
@@ -44,27 +49,32 @@ public sealed class Win32TaskbarLocator : ITaskbarLocator
             ? found.ToInt32Rect()
             : new Int32Rect(bounds.Right, bounds.Bottom, 0, 0);
 
-        return new TaskbarGeometry(taskbar, tray, bounds.ToInt32Rect(), trayBounds);
+        var taskbarBounds = bounds.ToInt32Rect();
+        var occupied = TaskbarOccupiedArea.Chain(taskbarBounds, trayBounds, ForeignWidgetBounds(taskbar));
+
+        return new TaskbarGeometry(taskbar, tray, taskbarBounds, occupied);
     }
 
     /// <summary>
-    /// Two things count as a change: the taskbar or its notification area moving or resizing,
-    /// and the taskbar going up or down in the stacking order, which is what it does to step
-    /// behind a full-screen app and to come back afterwards.
+    /// Three things count as a change: the taskbar or its notification area moving or
+    /// resizing, and the taskbar's own children being reordered, which is what Explorer does
+    /// when it raises its content above the widget. Going behind a full-screen app is not
+    /// among them: the widget is a child of the taskbar, so it goes along by itself.
     /// Hooked on the taskbar's own thread only: Explorer's file windows live on other threads
     /// of the same process, and dragging one of them around would otherwise flood this one.
     /// The two events are hooked apart because everything numbered between them (focus,
     /// selection, state changes) fires constantly while the mouse is over the taskbar.
+    /// Widgets of other apps appearing, vanishing or resizing happen in their own threads and
+    /// processes, so no hook here sees them: the host looks again on a timer for those.
     /// </summary>
     public IDisposable Watch(TaskbarGeometry taskbar, Action onChanged)
     {
         var thread = GetWindowThreadProcessId(taskbar.Handle, out var process);
-        var desktop = GetDesktopWindow();
 
         WinEventCallback callback = (_, eventType, window, objectId, _, _, _) =>
         {
             var changed = eventType == ReorderEvent
-                ? window == desktop
+                ? window == taskbar.Handle
                 : objectId == WindowObjectId && (window == taskbar.Handle || window == taskbar.TrayHandle);
 
             if (changed)
@@ -77,6 +87,33 @@ public sealed class Win32TaskbarLocator : ITaskbarLocator
             callback,
             SetWinEventHook(ReorderEvent, ReorderEvent, IntPtr.Zero, callback, process, thread, OutOfContext),
             SetWinEventHook(LocationChangeEvent, LocationChangeEvent, IntPtr.Zero, callback, process, thread, OutOfContext));
+    }
+
+    /// <summary>
+    /// The visible direct children of the taskbar that are neither Explorer's own nor ours:
+    /// the widgets other apps dock there. Only direct children matter, what a widget holds
+    /// inside itself does not take space of the taskbar.
+    /// </summary>
+    private static List<Int32Rect> ForeignWidgetBounds(IntPtr taskbar)
+    {
+        GetWindowThreadProcessId(taskbar, out var explorerProcess);
+        var ownProcess = (uint)Environment.ProcessId;
+        var widgets = new List<Int32Rect>();
+
+        for (var child = GetWindow(taskbar, FirstChild); child != IntPtr.Zero; child = GetWindow(child, NextSibling))
+        {
+            GetWindowThreadProcessId(child, out var process);
+
+            if (process != explorerProcess
+                && process != ownProcess
+                && IsWindowVisible(child)
+                && GetWindowRect(child, out var bounds))
+            {
+                widgets.Add(bounds.ToInt32Rect());
+            }
+        }
+
+        return widgets;
     }
 
     /// <summary>Holds the callback for as long as the hooks live: Windows only keeps a raw pointer to it.</summary>
@@ -127,7 +164,11 @@ public sealed class Win32TaskbarLocator : ITaskbarLocator
     private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
 
     [DllImport("user32.dll")]
-    private static extern IntPtr GetDesktopWindow();
+    private static extern IntPtr GetWindow(IntPtr window, uint relation);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsWindowVisible(IntPtr window);
 
     [DllImport("user32.dll")]
     private static extern IntPtr SetWinEventHook(

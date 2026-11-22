@@ -62,6 +62,6 @@ public sealed class TaskbarSlotTests
         Assert.Equal(0.5d, slot.ContentScale, precision: 6);
     }
 
-    private static TaskbarGeometry Taskbar(Int32Rect bounds, Int32Rect trayBounds) =>
-        new(new IntPtr(1), new IntPtr(2), bounds, trayBounds);
+    private static TaskbarGeometry Taskbar(Int32Rect bounds, Int32Rect occupiedBounds) =>
+        new(new IntPtr(1), new IntPtr(2), bounds, occupiedBounds);
 }
